@@ -1,0 +1,377 @@
+:root {
+  --bg: #0a0a12;
+  --tile-bg: #16161f;
+  --tile-border: #23232f;
+  --line-off: #3a3a52;
+  --core-0: #22e0ff;
+  --core-1: #ff3df0;
+  --core-2: #ffb52e;
+  --text: #e8e8f2;
+  --text-dim: #8a8aa5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  touch-action: manipulation;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+.btn {
+  padding: 0.5rem 1.1rem;
+  border-radius: 10px;
+  border: 1px solid var(--line-off);
+  background: var(--tile-bg);
+  color: var(--text);
+  letter-spacing: 0.05em;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.btn:hover {
+  border-color: var(--core-0);
+}
+
+.btn.primary {
+  border-color: var(--core-0);
+  background: rgba(34, 224, 255, 0.12);
+  color: var(--core-0);
+}
+
+/* ---------- Menu ---------- */
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 2rem 1rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 2.6rem;
+  letter-spacing: 0.35em;
+  text-indent: 0.35em;
+  color: var(--core-0);
+  text-shadow: 0 0 24px rgba(34, 224, 255, 0.55);
+}
+
+.tagline {
+  margin: 0;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.level-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(56px, 72px));
+  gap: 10px;
+  margin-top: 0.8rem;
+}
+
+.level-btn {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 1px solid var(--tile-border);
+  background: var(--tile-bg);
+  color: var(--text-dim);
+  font-size: 1.1rem;
+  opacity: 0.35;
+  transition:
+    border-color 0.15s,
+    transform 0.1s;
+}
+
+.level-btn.open {
+  opacity: 1;
+  border-color: var(--line-off);
+  color: var(--text);
+}
+
+.level-btn.open:hover {
+  border-color: var(--core-0);
+  transform: translateY(-2px);
+}
+
+.level-btn.done {
+  opacity: 1;
+  border-color: var(--core-0);
+  background: rgba(34, 224, 255, 0.16);
+  color: var(--core-0);
+}
+
+.level-btn.done:hover {
+  transform: translateY(-2px);
+}
+
+.level-check {
+  position: absolute;
+  top: 3px;
+  right: 6px;
+  font-size: 0.7rem;
+}
+
+/* ---------- Herní obrazovka ---------- */
+
+.game-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  padding: 0.8rem;
+}
+
+.hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: min(90vw, 70vh, 560px);
+}
+
+.hud-info {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.hud-level {
+  font-size: 1.15rem;
+  letter-spacing: 0.12em;
+}
+
+.hud-moves {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ---------- Hrací plocha ---------- */
+
+.board-wrap {
+  position: relative;
+  width: min(90vw, 70vh, 560px);
+}
+
+.board {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+}
+
+.tile {
+  position: relative;
+  border-radius: 14%;
+  background: var(--tile-bg);
+  border: 1px solid var(--tile-border);
+  padding: 0;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tile.locked {
+  background: #101018;
+}
+
+.pipes {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transition: transform 180ms ease-out;
+}
+
+.pipes line {
+  stroke: var(--line-off);
+  stroke-width: 11;
+  stroke-linecap: round;
+  transition: stroke 0.15s;
+}
+
+.pipes .endcap,
+.pipes .hub {
+  fill: var(--line-off);
+  transition: fill 0.15s;
+}
+
+.tile.powered.p0 .pipes {
+  filter: drop-shadow(0 0 5px var(--core-0));
+}
+
+.tile.powered.p1 .pipes {
+  filter: drop-shadow(0 0 5px var(--core-1));
+}
+
+.tile.powered.p2 .pipes {
+  filter: drop-shadow(0 0 5px var(--core-2));
+}
+
+.tile.powered.p0 line { stroke: var(--core-0); }
+.tile.powered.p1 line { stroke: var(--core-1); }
+.tile.powered.p2 line { stroke: var(--core-2); }
+
+.tile.powered.p0 .endcap,
+.tile.powered.p0 .hub { fill: var(--core-0); }
+.tile.powered.p1 .endcap,
+.tile.powered.p1 .hub { fill: var(--core-1); }
+.tile.powered.p2 .endcap,
+.tile.powered.p2 .hub { fill: var(--core-2); }
+
+/* jádro */
+
+.tile.core {
+  border-color: var(--line-off);
+}
+
+.core-pulse {
+  fill: var(--line-off);
+  transform-origin: 50px 50px;
+  animation: core-pulse 1.6s ease-in-out infinite;
+}
+
+.tile.powered.p0 .core-pulse { fill: var(--core-0); }
+.tile.powered.p1 .core-pulse { fill: var(--core-1); }
+.tile.powered.p2 .core-pulse { fill: var(--core-2); }
+
+@keyframes core-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.22);
+  }
+}
+
+/* zámek */
+
+.lock-icon {
+  position: absolute;
+  right: 7%;
+  bottom: 7%;
+  width: 22%;
+  height: 22%;
+  stroke: var(--text-dim);
+  fill: none;
+  pointer-events: none;
+}
+
+/* shake zamčené dlaždice */
+
+.tile.shaking {
+  animation: shake 200ms ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX(3px); }
+  75% { transform: translateX(-2px); }
+}
+
+/* výherní vlna — rozsvícení podle BFS vzdálenosti (animation-delay z JS) */
+
+.tile.win {
+  animation: win-flash 500ms ease-out backwards;
+}
+
+@keyframes win-flash {
+  0% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  40% {
+    filter: brightness(2.1);
+    transform: scale(1.08);
+  }
+  100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+}
+
+/* ---------- Výherní overlay ---------- */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 18, 0.78);
+  border-radius: 10px;
+  animation: overlay-in 250ms ease-out;
+}
+
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.overlay-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1.6rem 2.2rem;
+  border-radius: 16px;
+  border: 1px solid var(--core-0);
+  background: var(--tile-bg);
+  box-shadow: 0 0 32px rgba(34, 224, 255, 0.35);
+}
+
+.overlay-card h2 {
+  margin: 0;
+  letter-spacing: 0.15em;
+  color: var(--core-0);
+}
+
+.overlay-moves {
+  margin: 0.2rem 0 0.8rem;
+  color: var(--text-dim);
+}
+
+.overlay-buttons {
+  display: flex;
+  gap: 0.6rem;
+}
