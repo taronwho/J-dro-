@@ -94,12 +94,15 @@ export function Board({
             {lastWin &&
               (lastWin.newRecord ? (
                 <p className="overlay-record">{t('newRecord')}</p>
-              ) : (
+              ) : lastWin.bestMoves !== null ? (
                 <p className="overlay-best">{t('best', { n: lastWin.bestMoves })}</p>
-              ))}
+              ) : null)}
             {lastWin?.hintUsed && <p className="overlay-note">{t('hintCapNote')}</p>}
             {lastWin?.hintGained && (
               <p className="overlay-bonus">💡 {t('hintEarned')}</p>
+            )}
+            {lastWin?.hintGainedDaily && (
+              <p className="overlay-bonus">💡 {t('hintEarnedDaily')}</p>
             )}
             {lastWin && lastWin.achievements.length > 0 && (
               <div className="overlay-achievements">

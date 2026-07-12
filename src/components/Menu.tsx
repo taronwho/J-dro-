@@ -3,10 +3,14 @@ import { LANGS, useI18n } from '../i18n/i18n';
 import { CHAPTER_COUNT, CHAPTER_SIZE, LEVELS } from '../levels/levels';
 import { ACHIEVEMENTS, totalStars } from '../meta/achievements';
 import type { Progress } from './App';
+import type { HelpSection } from './Help';
 
 interface MenuProps {
   progress: Progress;
   onSelect: (id: number) => void;
+  onDaily: () => void;
+  onEndless: () => void;
+  onHelp: (section: HelpSection | null) => void;
 }
 
 function Stars({ count }: { count: number }) {
@@ -21,11 +25,19 @@ function Stars({ count }: { count: number }) {
   );
 }
 
-export function Menu({ progress, onSelect }: MenuProps) {
+function isoToday(): string {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+export function Menu({ progress, onSelect, onDaily, onEndless, onHelp }: MenuProps) {
   const { lang, setLang, t } = useI18n();
   const [showAchievements, setShowAchievements] = useState(false);
   const stars = totalStars(progress);
   const maxStars = LEVELS.length * 3;
+  const dailyDoneToday = progress.daily.last === isoToday();
 
   return (
     <div className="menu">
@@ -40,29 +52,72 @@ export function Menu({ progress, onSelect }: MenuProps) {
             {code.toUpperCase()}
           </button>
         ))}
+        <button
+          type="button"
+          className="lang-btn help-open"
+          onClick={() => onHelp(null)}
+          aria-label={t('helpTitle')}
+        >
+          ?
+        </button>
       </div>
-      <h1 className="title">JÁDRO</h1>
+      <h1 className="title">CORE</h1>
       <p className="tagline">{t('tagline')}</p>
 
       <div className="stats-row">
-        <span className="stat-chip" title={t('starsTotal', { x: stars, y: maxStars })}>
+        <button
+          type="button"
+          className="stat-chip stat-btn"
+          onClick={() => onHelp('target')}
+        >
           <span className="star filled">★</span> {stars} / {maxStars}
-        </span>
-        <span className="stat-chip" title={t('statHints')}>
+        </button>
+        <button
+          type="button"
+          className="stat-chip stat-btn"
+          onClick={() => onHelp('hints')}
+        >
           💡 {progress.hints}
-        </span>
-        <span className="stat-chip" title={t('statLevels')}>
+        </button>
+        <button
+          type="button"
+          className="stat-chip stat-btn"
+          onClick={() => onHelp('goal')}
+        >
           ⚡ {progress.completed.length} / {LEVELS.length}
-        </span>
-        <span className="stat-chip" title={t('statStreak')}>
+        </button>
+        <button
+          type="button"
+          className="stat-chip stat-btn"
+          onClick={() => onHelp('streak')}
+        >
           🔥 {progress.bestStreak}
-        </span>
+        </button>
         <button
           type="button"
           className="stat-chip stat-btn"
           onClick={() => setShowAchievements(true)}
         >
           🏆 {progress.achievements.length} / {ACHIEVEMENTS.length}
+        </button>
+      </div>
+
+      <div className="modes-row">
+        <button type="button" className="mode-btn" onClick={onDaily}>
+          <span className="mode-icon">🗓️</span>
+          <span className="mode-text">
+            <strong>{t('dailyTitle')}</strong>
+            <small>
+              {dailyDoneToday ? `✓ ${t('dailyDone')}` : `🔥 ${progress.daily.streak}`}
+            </small>
+          </span>
+        </button>
+        <button type="button" className="mode-btn" onClick={onEndless}>
+          <span className="mode-icon">♾️</span>
+          <span className="mode-text">
+            <strong>{t('endlessTitle')}</strong>
+            <small>⚡ {progress.endless.total}</small>
+          </span>
         </button>
       </div>
 
@@ -101,9 +156,7 @@ export function Menu({ progress, onSelect }: MenuProps) {
                     onClick={() => onSelect(id)}
                     aria-label={isUnlocked ? t('level', { n: id }) : t('ariaLockedLevel')}
                   >
-                    {movesMargin !== undefined && (
-                      <span className="badge-limit" title={t('limit', { n: '…' })} />
-                    )}
+                    {movesMargin !== undefined && <span className="badge-limit" />}
                     {wrap && <span className="badge-wrap" aria-hidden="true" />}
                     <span className="level-num">{id}</span>
                     {done && <Stars count={progress.best[id]?.stars ?? 1} />}

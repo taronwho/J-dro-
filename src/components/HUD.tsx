@@ -1,25 +1,27 @@
 import { useI18n } from '../i18n/i18n';
 
 interface HUDProps {
-  levelId: number;
+  title: string;
   moves: number;
   par: number;
   moveLimit: number | null;
   hints: number;
   hintMode: boolean;
   onHintToggle: () => void;
+  onHelp: () => void;
   onReset: () => void;
   onMenu: () => void;
 }
 
 export function HUD({
-  levelId,
+  title,
   moves,
   par,
   moveLimit,
   hints,
   hintMode,
   onHintToggle,
+  onHelp,
   onReset,
   onMenu,
 }: HUDProps) {
@@ -28,7 +30,7 @@ export function HUD({
   return (
     <header className="hud">
       <div className="hud-top">
-        <span className="hud-level">{t('level', { n: levelId })}</span>
+        <span className="hud-level">{title}</span>
         <div className="hud-buttons">
           <button
             type="button"
@@ -47,14 +49,24 @@ export function HUD({
           </button>
         </div>
       </div>
-      <div className="hud-moves">
-        {t('moves', { n: moves })} · {t('target', { n: par })}
-        {moveLimit !== null && (
-          <span className={nearLimit ? 'hud-limit danger' : 'hud-limit'}>
-            {' '}
-            · {t('limit', { n: moveLimit })}
-          </span>
-        )}
+      <div className="hud-bottom">
+        <span className="hud-moves">
+          {t('moves', { n: moves })} · {t('target', { n: par })}
+          {moveLimit !== null && (
+            <span className={nearLimit ? 'hud-limit danger' : 'hud-limit'}>
+              {' '}
+              · {t('limit', { n: moveLimit })}
+            </span>
+          )}
+        </span>
+        <button
+          type="button"
+          className="hud-help"
+          onClick={onHelp}
+          aria-label={t('helpTitle')}
+        >
+          ?
+        </button>
       </div>
     </header>
   );

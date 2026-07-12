@@ -1,15 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { generateLevel, rotateCw } from '../engine/generator';
 import { computeFlow } from '../engine/solver';
-import type { GameState } from '../engine/types';
+import type { GameState, LevelConfig } from '../engine/types';
 import { detectLang, I18nContext, makeT, persistLang, type Lang } from '../i18n/i18n';
 import { LEVELS, LEVEL_COUNT } from '../levels/levels';
 import { newlyUnlocked, type AchievementDef } from '../meta/achievements';
 import { Board } from './Board';
+import { Help, type HelpSection } from './Help';
 import { HUD } from './HUD';
 import { Menu } from './Menu';
 
 type Screen = 'menu' | 'game' | 'victory';
+
+export type Mode =
+  | { kind: 'level'; id: number }
+  | { kind: 'daily' }
+  | { kind: 'endless' };
 
 export interface BestEntry {
   moves: number;
@@ -25,6 +31,8 @@ export interface Progress {
   achievements: string[];
   streak: number; // aktuální série perfektních řešení
   bestStreak: number;
+  daily: { last: string; streak: number; total: number };
+  endless: { total: number };
 }
 
 // Kaskáda rozsvícení: delays[i] v ms (-1 = bez animace), entries[i] = strana vstupu světla
@@ -37,8 +45,9 @@ export interface Ignite {
 export interface LastWin {
   stars: number;
   newRecord: boolean;
-  bestMoves: number;
+  bestMoves: number | null; // null = režim bez rekordů (denní / nekonečná)
   hintGained: boolean;
+  hintGainedDaily: boolean; // odměna za denní výzvu (jiný text v overlayi)
   hintUsed: boolean;
   achievements: AchievementDef[];
 }
@@ -54,6 +63,8 @@ const EMPTY_PROGRESS: Progress = {
   achievements: [],
   streak: 0,
   bestStreak: 0,
+  daily: { last: '', streak: 0, total: 0 },
+  endless: { total: 0 },
 };
 
 // Fallback do paměti, když localStorage není dostupný
@@ -79,6 +90,8 @@ function loadProgress(): Progress {
         }
         const nums = (value: unknown): number[] =>
           Array.isArray(value) ? value.filter((x): x is number => typeof x === 'number') : [];
+        const daily = parsed.daily;
+        const endless = parsed.endless;
         return {
           unlocked: Math.min(Math.max(Math.floor(parsed.unlocked), 1), LEVEL_COUNT),
           completed: nums(parsed.completed),
@@ -90,6 +103,17 @@ function loadProgress(): Progress {
             : [],
           streak: typeof parsed.streak === 'number' ? parsed.streak : 0,
           bestStreak: typeof parsed.bestStreak === 'number' ? parsed.bestStreak : 0,
+          daily:
+            daily &&
+            typeof daily.last === 'string' &&
+            typeof daily.streak === 'number' &&
+            typeof daily.total === 'number'
+              ? { last: daily.last, streak: daily.streak, total: daily.total }
+              : { last: '', streak: 0, total: 0 },
+          endless:
+            endless && typeof endless.total === 'number'
+              ? { total: endless.total }
+              : { total: 0 },
         };
       }
     }
@@ -114,8 +138,44 @@ export function starsFor(moves: number, par: number): number {
   return 1;
 }
 
+function isoDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function dailyConfig(date: Date): LevelConfig {
+  const seed = date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+  return {
+    id: 0,
+    seed,
+    width: 7,
+    height: 7,
+    wrap: true,
+    coreCount: 2,
+    lockedCount: 3,
+  };
+}
+
+function endlessConfig(): LevelConfig {
+  // Náhodný seed smí vzniknout jen tady v UI vrstvě — engine je pro daný seed deterministický
+  const seed = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
+  const size = 5 + (seed % 3); // 5–7
+  return {
+    id: 0,
+    seed,
+    width: size,
+    height: size,
+    wrap: (seed & 4) !== 0,
+    coreCount: ([1, 2, 3] as const)[seed % 3],
+    lockedCount: seed % 4,
+  };
+}
+
 export function App() {
   const [screen, setScreen] = useState<Screen>('menu');
+  const [mode, setMode] = useState<Mode>({ kind: 'level', id: 1 });
   const [progress, setProgress] = useState<Progress>(loadProgress);
   const [game, setGame] = useState<GameState | null>(null);
   const [rotations, setRotations] = useState<number[]>([]);
@@ -124,6 +184,8 @@ export function App() {
   const [hintMode, setHintMode] = useState(false);
   const [hintUsed, setHintUsed] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [helpSection, setHelpSection] = useState<HelpSection | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
   const [lang, setLangState] = useState<Lang>(detectLang);
   const waveTimer = useRef<number | null>(null);
 
@@ -172,10 +234,11 @@ export function App() {
     }
   };
 
-  const startLevel = (id: number): void => {
+  const startConfig = (config: LevelConfig, nextMode: Mode): void => {
     clearWaveTimer();
-    const state = generateLevel(LEVELS[id - 1]);
+    const state = generateLevel(config);
     const flow = computeFlow(state.tiles, state.config);
+    setMode(nextMode);
     setGame(state);
     setRotations(new Array(state.tiles.length).fill(0));
     // úvodní kaskáda: světlo se rozlije z jader do už propojených dlaždic
@@ -191,6 +254,14 @@ export function App() {
     setScreen('game');
   };
 
+  const startLevel = (id: number): void =>
+    startConfig(LEVELS[id - 1], { kind: 'level', id });
+  const startDaily = (): void => startConfig(dailyConfig(new Date()), { kind: 'daily' });
+  const startEndless = (): void => startConfig(endlessConfig(), { kind: 'endless' });
+  const restart = (): void => {
+    if (game !== null) startConfig(game.config, mode);
+  };
+
   const goMenu = (): void => {
     clearWaveTimer();
     setGame(null);
@@ -198,36 +269,57 @@ export function App() {
   };
 
   const handleWin = (next: GameState, usedHint: boolean, base: Progress): void => {
-    const id = next.config.id;
     const rawStars = starsFor(next.moves, next.par);
     const stars = usedHint ? Math.min(rawStars, 2) : rawStars;
-    const prevBest = base.best[id];
-    const newRecord = prevBest === undefined || next.moves < prevBest.moves;
-    const bestMoves = newRecord ? next.moves : prevBest.moves;
 
-    const hintGained = stars === 3 && !base.hintsEarned.includes(id);
-    const perfect = stars === 3;
-    const streak = perfect ? base.streak + 1 : 0;
+    let updated: Progress;
+    let newRecord = false;
+    let bestMoves: number | null = null;
+    let hintGained = false;
 
-    const completed = base.completed.includes(id)
-      ? base.completed
-      : [...base.completed, id];
-    let updated: Progress = {
-      unlocked: Math.max(base.unlocked, Math.min(id + 1, LEVEL_COUNT)),
-      completed,
-      best: {
-        ...base.best,
-        [id]: {
-          moves: bestMoves,
-          stars: Math.max(stars, prevBest?.stars ?? 0),
+    if (mode.kind === 'level') {
+      const id = mode.id;
+      const prevBest = base.best[id];
+      newRecord = prevBest === undefined || next.moves < prevBest.moves;
+      bestMoves = newRecord ? next.moves : prevBest.moves;
+      hintGained = stars === 3 && !base.hintsEarned.includes(id);
+      const streak = stars === 3 ? base.streak + 1 : 0;
+      updated = {
+        ...base,
+        unlocked: Math.max(base.unlocked, Math.min(id + 1, LEVEL_COUNT)),
+        completed: base.completed.includes(id)
+          ? base.completed
+          : [...base.completed, id],
+        best: {
+          ...base.best,
+          [id]: { moves: bestMoves, stars: Math.max(stars, prevBest?.stars ?? 0) },
         },
-      },
-      hints: base.hints + (hintGained ? 1 : 0),
-      hintsEarned: hintGained ? [...base.hintsEarned, id] : base.hintsEarned,
-      achievements: base.achievements,
-      streak,
-      bestStreak: Math.max(base.bestStreak, streak),
-    };
+        hints: base.hints + (hintGained ? 1 : 0),
+        hintsEarned: hintGained ? [...base.hintsEarned, id] : base.hintsEarned,
+        streak,
+        bestStreak: Math.max(base.bestStreak, streak),
+      };
+    } else if (mode.kind === 'daily') {
+      const today = isoDate(new Date());
+      const yesterday = isoDate(new Date(Date.now() - 86400000));
+      const already = base.daily.last === today;
+      hintGained = !already;
+      updated = {
+        ...base,
+        hints: base.hints + (hintGained ? 1 : 0),
+        daily: {
+          last: today,
+          streak: already
+            ? base.daily.streak
+            : base.daily.last === yesterday
+              ? base.daily.streak + 1
+              : 1,
+          total: base.daily.total + (already ? 0 : 1),
+        },
+      };
+    } else {
+      updated = { ...base, endless: { total: base.endless.total + 1 } };
+    }
 
     const unlockedAchievements = newlyUnlocked(updated, updated.achievements, LEVELS);
     if (unlockedAchievements.length > 0) {
@@ -247,7 +339,8 @@ export function App() {
       stars,
       newRecord,
       bestMoves,
-      hintGained,
+      hintGained: mode.kind === 'level' && hintGained,
+      hintGainedDaily: mode.kind === 'daily' && hintGained,
       hintUsed: usedHint,
       achievements: unlockedAchievements,
     });
@@ -340,22 +433,49 @@ export function App() {
     applyBoardResult(next, game.powered, hintUsed, progress);
   };
 
+  const openHelp = (section: HelpSection | null): void => {
+    setHelpSection(section);
+    setShowHelp(true);
+  };
+
   let content;
   if (screen === 'menu' || game === null) {
-    content = <Menu progress={progress} onSelect={startLevel} />;
+    content = (
+      <Menu
+        progress={progress}
+        onSelect={startLevel}
+        onDaily={startDaily}
+        onEndless={startEndless}
+        onHelp={openHelp}
+      />
+    );
   } else {
-    const levelId = game.config.id;
+    const title =
+      mode.kind === 'level'
+        ? i18n.t('level', { n: mode.id })
+        : mode.kind === 'daily'
+          ? i18n.t('dailyTitle')
+          : i18n.t('endlessTitle');
+    const onNext =
+      mode.kind === 'level'
+        ? mode.id < LEVEL_COUNT
+          ? () => startLevel(mode.id + 1)
+          : null
+        : mode.kind === 'endless'
+          ? () => startEndless()
+          : null;
     content = (
       <div className="game-screen">
         <HUD
-          levelId={levelId}
+          title={title}
           moves={game.moves}
           par={game.par}
           moveLimit={game.moveLimit}
           hints={progress.hints}
           hintMode={hintMode}
           onHintToggle={() => setHintMode((h) => !h)}
-          onReset={() => startLevel(levelId)}
+          onHelp={() => openHelp('goal')}
+          onReset={restart}
           onMenu={goMenu}
         />
         <Board
@@ -368,13 +488,18 @@ export function App() {
           showOverlay={screen === 'victory'}
           lastWin={lastWin}
           onTileClick={handleTileClick}
-          onNext={levelId < LEVEL_COUNT ? () => startLevel(levelId + 1) : null}
-          onRetry={() => startLevel(levelId)}
+          onNext={onNext}
+          onRetry={restart}
           onMenu={goMenu}
         />
       </div>
     );
   }
 
-  return <I18nContext.Provider value={i18n}>{content}</I18nContext.Provider>;
+  return (
+    <I18nContext.Provider value={i18n}>
+      {content}
+      {showHelp && <Help highlight={helpSection} onClose={() => setShowHelp(false)} />}
+    </I18nContext.Provider>
+  );
 }

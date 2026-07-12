@@ -6,6 +6,8 @@ export interface AchievementProgress {
   completed: number[];
   best: Record<number, { moves: number; stars: number }>;
   bestStreak: number;
+  daily: { last: string; streak: number; total: number };
+  endless: { total: number };
 }
 
 export interface AchievementDef {
@@ -164,6 +166,39 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     },
     check: (p, levels) =>
       p.completed.some((id) => levels[id - 1]?.movesMargin !== undefined),
+  },
+  {
+    id: 'daily-first',
+    reward: 1,
+    name: { cs: 'Ranní rituál', en: 'Morning ritual', de: 'Morgenritual' },
+    desc: {
+      cs: 'Dokonči denní výzvu.',
+      en: 'Complete a daily challenge.',
+      de: 'Schließe eine Tages-Challenge ab.',
+    },
+    check: (p) => p.daily.total >= 1,
+  },
+  {
+    id: 'daily-7',
+    reward: 3,
+    name: { cs: 'Týden v kuse', en: 'Full week', de: 'Volle Woche' },
+    desc: {
+      cs: '7denní série denních výzev.',
+      en: 'A 7-day daily challenge streak.',
+      de: 'Eine 7-Tage-Serie der Tages-Challenge.',
+    },
+    check: (p) => p.daily.streak >= 7,
+  },
+  {
+    id: 'endless-10',
+    reward: 2,
+    name: { cs: 'Maratonec', en: 'Marathoner', de: 'Marathonläufer' },
+    desc: {
+      cs: 'Dokonči 10 nekonečných levelů.',
+      en: 'Complete 10 endless levels.',
+      de: 'Schließe 10 Endlos-Level ab.',
+    },
+    check: (p) => p.endless.total >= 10,
   },
   {
     id: 'master',

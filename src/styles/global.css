@@ -169,6 +169,59 @@ button:disabled {
   border-color: var(--gold);
 }
 
+/* ---------- Herní režimy ---------- */
+
+.modes-row {
+  display: flex;
+  gap: 0.6rem;
+  width: min(92vw, 560px);
+  margin-top: 0.3rem;
+}
+
+.mode-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 14px;
+  border: 1px solid var(--tile-border);
+  background: linear-gradient(145deg, #1c1c2a, #12121b);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 2px 6px rgba(0, 0, 0, 0.45);
+  transition:
+    border-color 0.15s,
+    transform 0.1s;
+}
+
+.mode-btn:hover {
+  border-color: var(--core-0);
+  transform: translateY(-2px);
+}
+
+.mode-icon {
+  font-size: 1.5rem;
+}
+
+.mode-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+}
+
+.mode-text strong {
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+}
+
+.mode-text small {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+}
+
 /* ---------- Kapitoly / sektory ---------- */
 
 .chapter {
@@ -358,6 +411,39 @@ button:disabled {
 .hud-buttons .btn {
   white-space: nowrap;
   padding: 0.45rem 0.75rem;
+}
+
+.hud-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.hud-help {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--tile-border);
+  background: linear-gradient(180deg, #1c1c28, #13131c);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.hud-help:hover {
+  border-color: var(--core-0);
+  color: var(--core-0);
+}
+
+.help-open {
+  font-weight: 600;
 }
 
 .hud-limit.danger {
@@ -854,4 +940,55 @@ button:disabled {
   font-size: 0.75rem;
   color: var(--gold);
   white-space: nowrap;
+}
+
+/* ---------- Nápověda „Jak hrát“ ---------- */
+
+.help-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.help-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 12px;
+  border: 1px solid var(--tile-border);
+  background: linear-gradient(180deg, #17171f, #101018);
+}
+
+.help-item.highlight {
+  border-color: var(--core-0);
+  box-shadow: 0 0 14px rgba(34, 224, 255, 0.25);
+}
+
+.help-icon {
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+
+.help-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.help-text strong {
+  font-size: 0.9rem;
+}
+
+.help-text small {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
