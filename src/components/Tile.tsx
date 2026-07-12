@@ -13,6 +13,7 @@ interface TileProps {
   igniteGen: number; // změna generace restartuje animaci rozlití světla
   igniteDelay: number; // ms; -1 = dlaždice se v této generaci nerozsvěcí
   igniteEntry: number; // světová strana, kterou světlo vteklo (-1 = jádro)
+  hintMode: boolean;
   onClick: () => void;
 }
 
@@ -22,6 +23,14 @@ const EDGE: ReadonlyArray<readonly [number, number]> = [
   [100, 50],
   [50, 100],
   [0, 50],
+];
+
+// Pozice nýtů v rozích zamčené dlaždice
+const RIVETS: ReadonlyArray<readonly [number, number]> = [
+  [13, 13],
+  [87, 13],
+  [13, 87],
+  [87, 87],
 ];
 
 export function TileView({
@@ -34,13 +43,14 @@ export function TileView({
   igniteGen,
   igniteDelay,
   igniteEntry,
+  hintMode,
   onClick,
 }: TileProps) {
   const { t } = useI18n();
   const [shaking, setShaking] = useState(false);
 
   const handleClick = (): void => {
-    if (tile.locked) {
+    if (tile.locked && !hintMode) {
       setShaking(true);
       return;
     }
@@ -56,7 +66,7 @@ export function TileView({
   const igniting = powered && igniteDelay >= 0;
   // vstupní strana převedená do základní orientace (SVG je otočené o rotation×90°)
   const entryBase =
-    igniting && igniteEntry >= 0 ? (((igniteEntry - rotation) % 4) + 4) % 4 : -1;
+    igniteEntry >= 0 ? (((igniteEntry - rotation) % 4) + 4) % 4 : -1;
 
   const classes = ['tile'];
   if (powered) classes.push('powered', `p${colorIdx}`);
@@ -79,15 +89,26 @@ export function TileView({
         viewBox="0 0 100 100"
         style={{ transform: `rotate(${rotation * 90}deg)` }}
       >
+        {/* kovový plášť trubek — statický podklad */}
+        {EDGE.map(([x, y], d) =>
+          base & (1 << d) ? (
+            <line key={`c${d}`} className="casing" x1={50} y1={50} x2={x} y2={y} />
+          ) : null,
+        )}
+        {connectors >= 1 && <circle className="casing-hub" cx={50} cy={50} r={12} />}
+
         <g key={igniteGen}>
+          {/* energetické linky uvnitř pláště */}
           {EDGE.map(([x, y], d) => {
             if ((base & (1 << d)) === 0) return null;
-            if (!igniting) return <line key={d} x1={50} y1={50} x2={x} y2={y} />;
+            if (!igniting) {
+              return <line key={d} className="energy" x1={50} y1={50} x2={x} y2={y} />;
+            }
             const isEntry = d === entryBase;
             return (
               <line
                 key={d}
-                className={isEntry ? 'line-in' : 'line-out'}
+                className={isEntry ? 'energy line-in' : 'energy line-out'}
                 style={{ animationDelay: `${igniteDelay + (isEntry ? 0 : 110)}ms` }}
                 x1={50}
                 y1={50}
@@ -96,13 +117,29 @@ export function TileView({
               />
             );
           })}
+
+          {/* tekoucí částice energie v napájených trubkách */}
+          {powered &&
+            EDGE.map(([x, y], d) =>
+              base & (1 << d) ? (
+                <line
+                  key={`f${d}`}
+                  className={d === entryBase ? 'flow flow-rev' : 'flow'}
+                  x1={50}
+                  y1={50}
+                  x2={x}
+                  y2={y}
+                />
+              ) : null,
+            )}
+
           {connectors === 1 && (
             <circle
               className={igniting ? 'endcap dot-in' : 'endcap'}
               style={igniting ? { animationDelay: `${igniteDelay + 150}ms` } : undefined}
               cx={50}
               cy={50}
-              r={11}
+              r={9}
             />
           )}
           {connectors >= 3 && (
@@ -111,17 +148,33 @@ export function TileView({
               style={igniting ? { animationDelay: `${igniteDelay + 150}ms` } : undefined}
               cx={50}
               cy={50}
-              r={9}
+              r={8}
             />
           )}
-          {tile.isCore && <circle className="core-pulse" cx={50} cy={50} r={16} />}
+
+          {/* reaktorové jádro: rotující prstenec + pulzující střed */}
+          {tile.isCore && (
+            <>
+              <circle className="core-ring" cx={50} cy={50} r={22} />
+              <circle className="core-pulse" cx={50} cy={50} r={15} />
+              <circle className="core-hot" cx={50} cy={50} r={6} />
+            </>
+          )}
         </g>
       </svg>
+
       {tile.locked && !tile.isCore && (
-        <svg className="lock-icon" viewBox="0 0 24 24">
-          <path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" strokeWidth={2} />
-          <rect x={6} y={10} width={12} height={9} rx={2} strokeWidth={2} />
-        </svg>
+        <>
+          <svg className="rivets" viewBox="0 0 100 100" aria-hidden="true">
+            {RIVETS.map(([x, y], i) => (
+              <circle key={i} className="rivet" cx={x} cy={y} r={3.2} />
+            ))}
+          </svg>
+          <svg className="lock-icon" viewBox="0 0 24 24">
+            <path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" strokeWidth={2} />
+            <rect x={6} y={10} width={12} height={9} rx={2} strokeWidth={2} />
+          </svg>
+        </>
       )}
     </button>
   );

@@ -77,6 +77,16 @@ describe('generátor levelů', () => {
         expect(state.par).toBeGreaterThanOrEqual(3);
         expect(isWon(solvedCopy(state))).toBe(true);
       });
+
+      it('limit tahů: odpovídá konfiguraci a je dosažitelný', () => {
+        const state = generateLevel(config);
+        if (config.movesMargin === undefined) {
+          expect(state.moveLimit).toBeNull();
+        } else {
+          expect(state.moveLimit).toBe(state.par + config.movesMargin);
+          expect(state.moveLimit).toBeGreaterThan(state.par);
+        }
+      });
     });
   }
 });

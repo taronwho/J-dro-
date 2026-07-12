@@ -1,11 +1,16 @@
 :root {
   --bg: #0a0a12;
-  --tile-bg: #16161f;
-  --tile-border: #23232f;
-  --line-off: #3a3a52;
+  --panel: #14141e;
+  --tile-hi: #20202e;
+  --tile-lo: #101019;
+  --tile-border: #2a2a3a;
+  --casing: #232331;
+  --casing-edge: #32324a;
+  --line-off: #43435e;
   --core-0: #22e0ff;
   --core-1: #ff3df0;
   --core-2: #ffb52e;
+  --gold: #ffd84d;
   --text: #e8e8f2;
   --text-dim: #8a8aa5;
 }
@@ -18,7 +23,6 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: var(--bg);
   color: var(--text);
   font-family:
     system-ui,
@@ -29,12 +33,20 @@ body {
   min-height: 100vh;
 }
 
+/* Pozadí: vinětace + jemná šumová textura (SVG feTurbulence, žádné externí assety) */
+body {
+  background-color: var(--bg);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(1100px 700px at 50% 15%, #141425 0%, #0a0a12 55%, #06060c 100%);
+  background-attachment: fixed;
+}
+
 #root {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
 }
 
 button {
@@ -51,24 +63,28 @@ button:disabled {
 }
 
 .btn {
-  padding: 0.5rem 1.1rem;
+  padding: 0.5rem 1rem;
   border-radius: 10px;
-  border: 1px solid var(--line-off);
-  background: var(--tile-bg);
+  border: 1px solid var(--tile-border);
+  background: linear-gradient(180deg, #1e1e2b, #14141d);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 2px 6px rgba(0, 0, 0, 0.45);
   color: var(--text);
   letter-spacing: 0.05em;
   transition:
     border-color 0.15s,
-    background 0.15s;
+    filter 0.15s;
 }
 
 .btn:hover {
   border-color: var(--core-0);
+  filter: brightness(1.15);
 }
 
 .btn.primary {
   border-color: var(--core-0);
-  background: rgba(34, 224, 255, 0.12);
+  background: linear-gradient(180deg, rgba(34, 224, 255, 0.22), rgba(34, 224, 255, 0.08));
   color: var(--core-0);
 }
 
@@ -78,8 +94,9 @@ button:disabled {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  padding: 2rem 1rem;
+  gap: 0.9rem;
+  padding: 1.6rem 1rem 3rem;
+  width: 100%;
 }
 
 .lang-switch {
@@ -91,7 +108,7 @@ button:disabled {
   padding: 0.3rem 0.7rem;
   border-radius: 8px;
   border: 1px solid var(--tile-border);
-  background: var(--tile-bg);
+  background: linear-gradient(180deg, #1c1c28, #13131c);
   color: var(--text-dim);
   font-size: 0.8rem;
   letter-spacing: 0.08em;
@@ -105,19 +122,15 @@ button:disabled {
   color: var(--core-0);
 }
 
-.stars-total {
-  margin: 0;
-  color: var(--text-dim);
-  letter-spacing: 0.06em;
-}
-
 .title {
   margin: 0;
   font-size: 2.6rem;
   letter-spacing: 0.35em;
   text-indent: 0.35em;
   color: var(--core-0);
-  text-shadow: 0 0 24px rgba(34, 224, 255, 0.55);
+  text-shadow:
+    0 0 24px rgba(34, 224, 255, 0.6),
+    0 0 60px rgba(34, 224, 255, 0.25);
 }
 
 .tagline {
@@ -126,25 +139,90 @@ button:disabled {
   text-align: center;
 }
 
+.stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 0.2rem;
+}
+
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--tile-border);
+  background: linear-gradient(180deg, #1c1c28, #12121a);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-btn {
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.stat-btn:hover {
+  border-color: var(--gold);
+}
+
+/* ---------- Kapitoly / sektory ---------- */
+
+.chapter {
+  width: min(92vw, 560px);
+  margin-top: 0.6rem;
+}
+
+.chapter-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 0.2rem 0.45rem;
+}
+
+.chapter-head h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.chapter-stars {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
 .level-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(56px, 72px));
-  gap: 10px;
-  margin-top: 0.8rem;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
 }
 
 .level-btn {
   position: relative;
   aspect-ratio: 1;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid var(--tile-border);
-  background: var(--tile-bg);
+  background: linear-gradient(145deg, #191924, #101018);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 2px 5px rgba(0, 0, 0, 0.4);
   color: var(--text-dim);
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   opacity: 0.35;
   transition:
     border-color 0.15s,
     transform 0.1s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .level-btn.open {
@@ -153,41 +231,61 @@ button:disabled {
   color: var(--text);
 }
 
-.level-btn.open:hover {
-  border-color: var(--core-0);
-  transform: translateY(-2px);
-}
-
 .level-btn.done {
   opacity: 1;
-  border-color: var(--core-0);
-  background: rgba(34, 224, 255, 0.16);
+  border-color: rgba(34, 224, 255, 0.55);
+  background: linear-gradient(145deg, rgba(34, 224, 255, 0.18), rgba(34, 224, 255, 0.05));
   color: var(--core-0);
 }
 
+.level-btn.open:hover,
 .level-btn.done:hover {
   transform: translateY(-2px);
+  border-color: var(--core-0);
 }
 
-.level-btn .level-num {
+.level-num {
   display: block;
   line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.badge-limit {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-top: 10px solid var(--core-2);
+  opacity: 0.85;
+}
+
+.badge-wrap {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid var(--text-dim);
+  border-radius: 50%;
+  opacity: 0.8;
 }
 
 /* ---------- Hvězdy ---------- */
 
 .star {
-  color: #3a3a52;
+  color: #34344a;
 }
 
 .star.filled {
-  color: #ffd84d;
+  color: var(--gold);
   text-shadow: 0 0 8px rgba(255, 216, 77, 0.6);
 }
 
 .lvl-stars {
   display: block;
-  font-size: 0.6rem;
+  font-size: 0.55rem;
   letter-spacing: 0.1em;
   margin-top: 2px;
 }
@@ -223,24 +321,25 @@ button:disabled {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 0.9rem;
   width: 100%;
+  min-height: 100vh;
   padding: 0.8rem;
 }
 
 .hud {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  width: min(90vw, 70vh, 560px);
+  flex-direction: column;
+  gap: 0.3rem;
+  width: min(92vw, 70vh, 580px);
 }
 
-.hud-info {
+.hud-top {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
 }
 
 .hud-level {
@@ -253,19 +352,49 @@ button:disabled {
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+}
+
+.hud-buttons .btn {
+  white-space: nowrap;
+  padding: 0.45rem 0.75rem;
+}
+
+.hud-limit.danger {
+  color: #ff5d5d;
+  font-weight: 600;
 }
 
 .hud-buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem;
+}
+
+.hint-btn.active {
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 0 12px rgba(255, 216, 77, 0.35);
+}
+
+.hint-msg {
+  margin: 0 0 0.5rem;
+  text-align: center;
+  color: var(--gold);
+  font-size: 0.85rem;
 }
 
 /* ---------- Hrací plocha ---------- */
 
 .board-wrap {
   position: relative;
-  width: min(90vw, 70vh, 560px);
+  width: min(92vw, 70vh, 580px);
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid var(--tile-border);
+  background: linear-gradient(160deg, #171722, #0e0e16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 8px 30px rgba(0, 0, 0, 0.55);
 }
 
 .board {
@@ -274,18 +403,31 @@ button:disabled {
   width: 100%;
 }
 
+.board.hint-mode .tile:not(.locked) {
+  cursor: crosshair;
+}
+
 .tile {
   position: relative;
-  border-radius: 14%;
-  background: var(--tile-bg);
+  border-radius: 16%;
+  background: linear-gradient(145deg, var(--tile-hi) 0%, var(--tile-lo) 60%, #0d0d14 100%);
   border: 1px solid var(--tile-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.35);
   padding: 0;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
 }
 
 .tile.locked {
-  background: #101018;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 255, 255, 0.015) 0 6px,
+      transparent 6px 12px
+    ),
+    linear-gradient(145deg, #15151f 0%, #0d0d13 100%);
 }
 
 .pipes {
@@ -295,11 +437,71 @@ button:disabled {
   transition: transform 180ms ease-out;
 }
 
-.pipes line {
+/* kovový plášť trubek */
+
+.pipes .casing {
+  stroke: var(--casing);
+  stroke-width: 17;
+  stroke-linecap: round;
+}
+
+.pipes .casing-hub {
+  fill: var(--casing);
+  stroke: var(--casing-edge);
+  stroke-width: 1.5;
+}
+
+/* energie uvnitř trubek */
+
+.pipes .energy {
   stroke: var(--line-off);
-  stroke-width: 11;
+  stroke-width: 7;
   stroke-linecap: round;
   transition: stroke 0.15s;
+}
+
+.pipes .endcap,
+.pipes .hub {
+  fill: var(--line-off);
+  transition: fill 0.15s;
+}
+
+.tile.powered.p0 .pipes { filter: drop-shadow(0 0 6px var(--core-0)); }
+.tile.powered.p1 .pipes { filter: drop-shadow(0 0 6px var(--core-1)); }
+.tile.powered.p2 .pipes { filter: drop-shadow(0 0 6px var(--core-2)); }
+
+.tile.powered.p0 .energy { stroke: var(--core-0); }
+.tile.powered.p1 .energy { stroke: var(--core-1); }
+.tile.powered.p2 .energy { stroke: var(--core-2); }
+
+.tile.powered.p0 .endcap,
+.tile.powered.p0 .hub { fill: var(--core-0); }
+.tile.powered.p1 .endcap,
+.tile.powered.p1 .hub { fill: var(--core-1); }
+.tile.powered.p2 .endcap,
+.tile.powered.p2 .hub { fill: var(--core-2); }
+
+/* tekoucí částice energie */
+
+.pipes .flow {
+  stroke: rgba(255, 255, 255, 0.55);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-dasharray: 4 18;
+  animation: flow-move 900ms linear infinite;
+}
+
+.pipes .flow-rev {
+  animation-direction: reverse;
+}
+
+@keyframes flow-move {
+  from {
+    stroke-dashoffset: 22;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 /* Rozlití světla do nově připojené dlaždice: vstupní linka se rozsvěcí
@@ -352,39 +554,29 @@ button:disabled {
   }
 }
 
-.pipes .endcap,
-.pipes .hub {
-  fill: var(--line-off);
-  transition: fill 0.15s;
-}
-
-.tile.powered.p0 .pipes {
-  filter: drop-shadow(0 0 5px var(--core-0));
-}
-
-.tile.powered.p1 .pipes {
-  filter: drop-shadow(0 0 5px var(--core-1));
-}
-
-.tile.powered.p2 .pipes {
-  filter: drop-shadow(0 0 5px var(--core-2));
-}
-
-.tile.powered.p0 line { stroke: var(--core-0); }
-.tile.powered.p1 line { stroke: var(--core-1); }
-.tile.powered.p2 line { stroke: var(--core-2); }
-
-.tile.powered.p0 .endcap,
-.tile.powered.p0 .hub { fill: var(--core-0); }
-.tile.powered.p1 .endcap,
-.tile.powered.p1 .hub { fill: var(--core-1); }
-.tile.powered.p2 .endcap,
-.tile.powered.p2 .hub { fill: var(--core-2); }
-
-/* jádro */
+/* ---------- Reaktorové jádro ---------- */
 
 .tile.core {
-  border-color: var(--line-off);
+  border-color: var(--casing-edge);
+}
+
+.core-ring {
+  fill: none;
+  stroke: var(--line-off);
+  stroke-width: 2.5;
+  stroke-dasharray: 8 6;
+  transform-origin: 50px 50px;
+  animation: ring-spin 7s linear infinite;
+}
+
+.tile.powered.p0 .core-ring { stroke: var(--core-0); }
+.tile.powered.p1 .core-ring { stroke: var(--core-1); }
+.tile.powered.p2 .core-ring { stroke: var(--core-2); }
+
+@keyframes ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .core-pulse {
@@ -397,6 +589,12 @@ button:disabled {
 .tile.powered.p1 .core-pulse { fill: var(--core-1); }
 .tile.powered.p2 .core-pulse { fill: var(--core-2); }
 
+.core-hot {
+  fill: rgba(255, 255, 255, 0.85);
+  transform-origin: 50px 50px;
+  animation: core-pulse 1.6s ease-in-out infinite reverse;
+}
+
 @keyframes core-pulse {
   0%,
   100% {
@@ -407,14 +605,28 @@ button:disabled {
   }
 }
 
-/* zámek */
+/* ---------- Zámek a nýty ---------- */
+
+.rivets {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.rivet {
+  fill: #3c3c52;
+  stroke: #1a1a26;
+  stroke-width: 1;
+}
 
 .lock-icon {
   position: absolute;
   right: 7%;
   bottom: 7%;
-  width: 22%;
-  height: 22%;
+  width: 20%;
+  height: 20%;
   stroke: var(--text-dim);
   fill: none;
   pointer-events: none;
@@ -454,7 +666,7 @@ button:disabled {
   }
 }
 
-/* ---------- Výherní overlay ---------- */
+/* ---------- Overlaye ---------- */
 
 .overlay {
   position: absolute;
@@ -462,11 +674,12 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(10, 10, 18, 0.85);
+  background: rgba(8, 8, 14, 0.85);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  border-radius: 10px;
+  border-radius: 20px;
   animation: overlay-in 250ms ease-out;
+  z-index: 5;
 }
 
 @keyframes overlay-in {
@@ -478,39 +691,167 @@ button:disabled {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
-  padding: 1.6rem 2.2rem;
+  gap: 0.35rem;
+  padding: 1.5rem 2rem;
+  max-width: 92%;
   border-radius: 16px;
   border: 1px solid var(--core-0);
-  background: var(--tile-bg);
+  background: linear-gradient(160deg, #1a1a28, #10101a);
   box-shadow: 0 0 32px rgba(34, 224, 255, 0.35);
+}
+
+.overlay-card.fail {
+  border-color: #ff5d5d;
+  box-shadow: 0 0 32px rgba(255, 93, 93, 0.3);
+}
+
+.overlay-card.fail h2 {
+  color: #ff5d5d;
 }
 
 .overlay-card h2 {
   margin: 0;
   letter-spacing: 0.15em;
   color: var(--core-0);
+  text-align: center;
 }
 
 .overlay-moves {
   margin: 0.2rem 0 0;
   color: var(--text-dim);
+  text-align: center;
 }
 
 .overlay-record {
-  margin: 0 0 0.6rem;
-  color: #ffd84d;
+  margin: 0;
+  color: var(--gold);
   letter-spacing: 0.08em;
   animation: star-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) 500ms backwards;
 }
 
 .overlay-best {
-  margin: 0 0 0.6rem;
+  margin: 0;
   color: var(--text-dim);
   font-size: 0.9rem;
+}
+
+.overlay-note {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+.overlay-bonus {
+  margin: 0.2rem 0 0;
+  color: var(--gold);
+  font-size: 0.9rem;
+  animation: star-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) 650ms backwards;
+}
+
+.overlay-achievements {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.overlay-ach-name {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text);
 }
 
 .overlay-buttons {
   display: flex;
   gap: 0.6rem;
+  margin-top: 0.7rem;
+}
+
+/* ---------- Modal úspěchů ---------- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 6, 12, 0.8);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 20;
+  padding: 1rem;
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  width: min(94vw, 460px);
+  max-height: 84vh;
+  padding: 1.2rem 1.2rem 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--tile-border);
+  background: linear-gradient(160deg, #1a1a28, #10101a);
+  box-shadow: 0 12px 50px rgba(0, 0, 0, 0.6);
+}
+
+.modal h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  letter-spacing: 0.12em;
+}
+
+.ach-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.ach {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 12px;
+  border: 1px solid var(--tile-border);
+  background: linear-gradient(180deg, #17171f, #101018);
+  opacity: 0.55;
+}
+
+.ach.owned {
+  opacity: 1;
+  border-color: rgba(255, 216, 77, 0.45);
+}
+
+.ach-icon {
+  font-size: 1.1rem;
+}
+
+.ach-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ach-text strong {
+  font-size: 0.9rem;
+}
+
+.ach-text small {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+}
+
+.ach-reward {
+  font-size: 0.75rem;
+  color: var(--gold);
+  white-space: nowrap;
 }

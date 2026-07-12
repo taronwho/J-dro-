@@ -9,13 +9,14 @@ export interface Tile {
 }
 
 export interface LevelConfig {
-  id: number; // 1–32
+  id: number; // 1–100
   seed: number;
   width: number;
   height: number;
   wrap: boolean;
   coreCount: 1 | 2 | 3;
   lockedCount: number;
+  movesMargin?: number; // limit tahů = par + margin; undefined = bez limitu
 }
 
 export interface GameState {
@@ -25,4 +26,5 @@ export interface GameState {
   powered: boolean[]; // přepočítáno po každém tahu
   won: boolean;
   par: number; // minimální počet tahů (součet nejkratších rotací k řešení)
+  moveLimit: number | null; // maximum tahů, null = bez limitu
 }

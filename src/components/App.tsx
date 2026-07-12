@@ -4,6 +4,7 @@ import { computeFlow } from '../engine/solver';
 import type { GameState } from '../engine/types';
 import { detectLang, I18nContext, makeT, persistLang, type Lang } from '../i18n/i18n';
 import { LEVELS, LEVEL_COUNT } from '../levels/levels';
+import { newlyUnlocked, type AchievementDef } from '../meta/achievements';
 import { Board } from './Board';
 import { HUD } from './HUD';
 import { Menu } from './Menu';
@@ -15,10 +16,15 @@ export interface BestEntry {
   stars: number;
 }
 
-interface Progress {
+export interface Progress {
   unlocked: number;
   completed: number[];
   best: Record<number, BestEntry>;
+  hints: number;
+  hintsEarned: number[]; // levely, které už daly nápovědu za 3 hvězdy
+  achievements: string[];
+  streak: number; // aktuální série perfektních řešení
+  bestStreak: number;
 }
 
 // Kaskáda rozsvícení: delays[i] v ms (-1 = bez animace), entries[i] = strana vstupu světla
@@ -28,13 +34,27 @@ export interface Ignite {
   entries: number[];
 }
 
-interface LastWin {
+export interface LastWin {
   stars: number;
   newRecord: boolean;
   bestMoves: number;
+  hintGained: boolean;
+  hintUsed: boolean;
+  achievements: AchievementDef[];
 }
 
 const STORAGE_KEY = 'jadro-progress';
+
+const EMPTY_PROGRESS: Progress = {
+  unlocked: 1,
+  completed: [],
+  best: {},
+  hints: 0,
+  hintsEarned: [],
+  achievements: [],
+  streak: 0,
+  bestStreak: 0,
+};
 
 // Fallback do paměti, když localStorage není dostupný
 let memoryProgress: Progress | null = null;
@@ -57,17 +77,26 @@ function loadProgress(): Progress {
             }
           }
         }
+        const nums = (value: unknown): number[] =>
+          Array.isArray(value) ? value.filter((x): x is number => typeof x === 'number') : [];
         return {
           unlocked: Math.min(Math.max(Math.floor(parsed.unlocked), 1), LEVEL_COUNT),
-          completed: parsed.completed.filter((x): x is number => typeof x === 'number'),
+          completed: nums(parsed.completed),
           best,
+          hints: typeof parsed.hints === 'number' ? Math.max(0, parsed.hints) : 0,
+          hintsEarned: nums(parsed.hintsEarned),
+          achievements: Array.isArray(parsed.achievements)
+            ? parsed.achievements.filter((x): x is string => typeof x === 'string')
+            : [],
+          streak: typeof parsed.streak === 'number' ? parsed.streak : 0,
+          bestStreak: typeof parsed.bestStreak === 'number' ? parsed.bestStreak : 0,
         };
       }
     }
   } catch {
     // localStorage nedostupný — hrajeme bez ukládání
   }
-  return memoryProgress ?? { unlocked: 1, completed: [], best: {} };
+  return memoryProgress ?? EMPTY_PROGRESS;
 }
 
 function saveProgress(progress: Progress): void {
@@ -92,6 +121,9 @@ export function App() {
   const [rotations, setRotations] = useState<number[]>([]);
   const [ignite, setIgnite] = useState<Ignite>({ gen: 0, delays: [], entries: [] });
   const [lastWin, setLastWin] = useState<LastWin | null>(null);
+  const [hintMode, setHintMode] = useState(false);
+  const [hintUsed, setHintUsed] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [lang, setLangState] = useState<Lang>(detectLang);
   const waveTimer = useRef<number | null>(null);
 
@@ -110,6 +142,22 @@ export function App() {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+
+  // Odemykací odkaz pro testování: …/#unlock-all odemkne všechny levely
+  useEffect(() => {
+    if (window.location.hash === '#unlock-all') {
+      setProgress((prev) => {
+        const updated: Progress = {
+          ...prev,
+          unlocked: LEVEL_COUNT,
+          hints: Math.max(prev.hints, 10),
+        };
+        saveProgress(updated);
+        return updated;
+      });
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -137,6 +185,9 @@ export function App() {
       entries: flow.entryDirs,
     }));
     setLastWin(null);
+    setHintMode(false);
+    setHintUsed(false);
+    setFailed(false);
     setScreen('game');
   };
 
@@ -146,8 +197,127 @@ export function App() {
     setScreen('menu');
   };
 
+  const handleWin = (next: GameState, usedHint: boolean, base: Progress): void => {
+    const id = next.config.id;
+    const rawStars = starsFor(next.moves, next.par);
+    const stars = usedHint ? Math.min(rawStars, 2) : rawStars;
+    const prevBest = base.best[id];
+    const newRecord = prevBest === undefined || next.moves < prevBest.moves;
+    const bestMoves = newRecord ? next.moves : prevBest.moves;
+
+    const hintGained = stars === 3 && !base.hintsEarned.includes(id);
+    const perfect = stars === 3;
+    const streak = perfect ? base.streak + 1 : 0;
+
+    const completed = base.completed.includes(id)
+      ? base.completed
+      : [...base.completed, id];
+    let updated: Progress = {
+      unlocked: Math.max(base.unlocked, Math.min(id + 1, LEVEL_COUNT)),
+      completed,
+      best: {
+        ...base.best,
+        [id]: {
+          moves: bestMoves,
+          stars: Math.max(stars, prevBest?.stars ?? 0),
+        },
+      },
+      hints: base.hints + (hintGained ? 1 : 0),
+      hintsEarned: hintGained ? [...base.hintsEarned, id] : base.hintsEarned,
+      achievements: base.achievements,
+      streak,
+      bestStreak: Math.max(base.bestStreak, streak),
+    };
+
+    const unlockedAchievements = newlyUnlocked(updated, updated.achievements, LEVELS);
+    if (unlockedAchievements.length > 0) {
+      updated = {
+        ...updated,
+        achievements: [
+          ...updated.achievements,
+          ...unlockedAchievements.map((a) => a.id),
+        ],
+        hints: updated.hints + unlockedAchievements.reduce((s, a) => s + a.reward, 0),
+      };
+    }
+
+    setProgress(updated);
+    saveProgress(updated);
+    setLastWin({
+      stars,
+      newRecord,
+      bestMoves,
+      hintGained,
+      hintUsed: usedHint,
+      achievements: unlockedAchievements,
+    });
+  };
+
+  const applyBoardResult = (
+    next: GameState,
+    prevPowered: boolean[],
+    usedHint: boolean,
+    baseProgress: Progress,
+  ): void => {
+    const flow = computeFlow(next.tiles, next.config);
+    setGame(next);
+
+    // nově napájené dlaždice: světlo do nich vteče kaskádou od místa připojení
+    const fresh = flow.powered.map((p, i) => p && !prevPowered[i]);
+    const anyFresh = fresh.some(Boolean);
+    let minDist = Infinity;
+    flow.dists.forEach((d, i) => {
+      if (fresh[i] && d >= 0 && d < minDist) minDist = d;
+    });
+    setIgnite((prev) => ({
+      gen: anyFresh ? prev.gen + 1 : prev.gen,
+      delays: flow.dists.map((d, i) => (fresh[i] ? 120 + (d - minDist) * 70 : -1)),
+      entries: flow.entryDirs,
+    }));
+
+    if (next.won) {
+      handleWin(next, usedHint, baseProgress);
+      const maxDist = flow.dists.reduce((m, d) => Math.max(m, d), 0);
+      clearWaveTimer();
+      waveTimer.current = window.setTimeout(() => {
+        setScreen('victory');
+      }, maxDist * 40 + 600);
+    } else if (next.moveLimit !== null && next.moves >= next.moveLimit) {
+      setFailed(true);
+    }
+  };
+
+  const applyHint = (index: number): void => {
+    if (!game || game.won || failed) return;
+    const tile = game.tiles[index];
+    setHintMode(false);
+    if (tile.locked) return;
+
+    const alreadyCorrect = tile.mask === tile.solutionMask;
+    if (!alreadyCorrect && progress.hints < 1) return;
+
+    const tiles = game.tiles.slice();
+    tiles[index] = { ...tile, mask: tile.solutionMask, locked: true };
+    const flow = computeFlow(tiles, game.config);
+    const won = flow.powered.every(Boolean);
+    const next: GameState = { ...game, tiles, powered: flow.powered, won };
+
+    let baseProgress = progress;
+    if (!alreadyCorrect) {
+      setHintUsed(true);
+      baseProgress = { ...progress, hints: progress.hints - 1 };
+      setProgress(baseProgress);
+      saveProgress(baseProgress);
+    }
+    applyBoardResult(next, game.powered, hintUsed || !alreadyCorrect, baseProgress);
+  };
+
   const handleTileClick = (index: number): void => {
-    if (!game || game.won) return;
+    if (!game || game.won || failed) return;
+    if (hintMode) {
+      applyHint(index);
+      return;
+    }
     const tile = game.tiles[index];
     if (tile.locked) return;
 
@@ -162,69 +332,17 @@ export function App() {
       powered: flow.powered,
       won,
     };
-    setGame(next);
     setRotations((prev) => {
       const copy = prev.slice();
       copy[index] += 1;
       return copy;
     });
-
-    // nově napájené dlaždice: světlo do nich vteče kaskádou od místa připojení
-    const fresh = flow.powered.map((p, i) => p && !game.powered[i]);
-    const anyFresh = fresh.some(Boolean);
-    let minDist = Infinity;
-    flow.dists.forEach((d, i) => {
-      if (fresh[i] && d >= 0 && d < minDist) minDist = d;
-    });
-    setIgnite((prev) => ({
-      gen: anyFresh ? prev.gen + 1 : prev.gen,
-      delays: flow.dists.map((d, i) => (fresh[i] ? 120 + (d - minDist) * 70 : -1)),
-      entries: flow.entryDirs,
-    }));
-
-    if (won) {
-      const id = game.config.id;
-      const stars = starsFor(next.moves, next.par);
-      const prevBest = progress.best[id];
-      const newRecord = prevBest === undefined || next.moves < prevBest.moves;
-      const bestMoves = newRecord ? next.moves : prevBest.moves;
-      setLastWin({ stars, newRecord, bestMoves });
-
-      const completed = progress.completed.includes(id)
-        ? progress.completed
-        : [...progress.completed, id];
-      const updated: Progress = {
-        unlocked: Math.max(progress.unlocked, Math.min(id + 1, LEVEL_COUNT)),
-        completed,
-        best: {
-          ...progress.best,
-          [id]: newRecord
-            ? { moves: next.moves, stars: Math.max(stars, prevBest?.stars ?? 0) }
-            : prevBest,
-        },
-      };
-      setProgress(updated);
-      saveProgress(updated);
-
-      // výherní vlna: overlay až po doběhnutí rozsvícení
-      const maxDist = flow.dists.reduce((m, d) => Math.max(m, d), 0);
-      clearWaveTimer();
-      waveTimer.current = window.setTimeout(() => {
-        setScreen('victory');
-      }, maxDist * 40 + 600);
-    }
+    applyBoardResult(next, game.powered, hintUsed, progress);
   };
 
   let content;
   if (screen === 'menu' || game === null) {
-    content = (
-      <Menu
-        unlocked={progress.unlocked}
-        completed={progress.completed}
-        best={progress.best}
-        onSelect={startLevel}
-      />
-    );
+    content = <Menu progress={progress} onSelect={startLevel} />;
   } else {
     const levelId = game.config.id;
     content = (
@@ -233,6 +351,10 @@ export function App() {
           levelId={levelId}
           moves={game.moves}
           par={game.par}
+          moveLimit={game.moveLimit}
+          hints={progress.hints}
+          hintMode={hintMode}
+          onHintToggle={() => setHintMode((h) => !h)}
           onReset={() => startLevel(levelId)}
           onMenu={goMenu}
         />
@@ -240,10 +362,14 @@ export function App() {
           game={game}
           rotations={rotations}
           ignite={ignite}
+          hintMode={hintMode}
+          hints={progress.hints}
+          failed={failed}
           showOverlay={screen === 'victory'}
           lastWin={lastWin}
           onTileClick={handleTileClick}
           onNext={levelId < LEVEL_COUNT ? () => startLevel(levelId + 1) : null}
+          onRetry={() => startLevel(levelId)}
           onMenu={goMenu}
         />
       </div>

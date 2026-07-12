@@ -149,5 +149,6 @@ export function generateLevel(config: LevelConfig): GameState {
     powered: flow.powered,
     won: flow.powered.every(Boolean),
     par,
+    moveLimit: config.movesMargin !== undefined ? par + config.movesMargin : null,
   };
 }
