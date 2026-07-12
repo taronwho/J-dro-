@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { bitCount, rotateCcw } from '../engine/generator';
 import type { Tile } from '../engine/types';
+import { useI18n } from '../i18n/i18n';
 
 interface TileProps {
   tile: Tile;
@@ -9,10 +10,13 @@ interface TileProps {
   colorIdx: number;
   dist: number;
   won: boolean;
+  igniteGen: number; // změna generace restartuje animaci rozlití světla
+  igniteDelay: number; // ms; -1 = dlaždice se v této generaci nerozsvěcí
+  igniteEntry: number; // světová strana, kterou světlo vteklo (-1 = jádro)
   onClick: () => void;
 }
 
-// Středy hran ve viewBoxu 100×100, pořadí N, E, S, W
+// Středy hran ve viewBoxu 100×100, pořadí N, E, S, W; každá linka má délku 50
 const EDGE: ReadonlyArray<readonly [number, number]> = [
   [50, 0],
   [100, 50],
@@ -20,7 +24,19 @@ const EDGE: ReadonlyArray<readonly [number, number]> = [
   [0, 50],
 ];
 
-export function TileView({ tile, rotation, powered, colorIdx, dist, won, onClick }: TileProps) {
+export function TileView({
+  tile,
+  rotation,
+  powered,
+  colorIdx,
+  dist,
+  won,
+  igniteGen,
+  igniteDelay,
+  igniteEntry,
+  onClick,
+}: TileProps) {
+  const { t } = useI18n();
   const [shaking, setShaking] = useState(false);
 
   const handleClick = (): void => {
@@ -37,6 +53,11 @@ export function TileView({ tile, rotation, powered, colorIdx, dist, won, onClick
   for (let k = 0; k < rotation % 4; k++) base = rotateCcw(base);
   const connectors = bitCount(base);
 
+  const igniting = powered && igniteDelay >= 0;
+  // vstupní strana převedená do základní orientace (SVG je otočené o rotation×90°)
+  const entryBase =
+    igniting && igniteEntry >= 0 ? (((igniteEntry - rotation) % 4) + 4) % 4 : -1;
+
   const classes = ['tile'];
   if (powered) classes.push('powered', `p${colorIdx}`);
   if (tile.locked) classes.push('locked');
@@ -51,21 +72,50 @@ export function TileView({ tile, rotation, powered, colorIdx, dist, won, onClick
       onClick={handleClick}
       onAnimationEnd={() => setShaking(false)}
       style={won && powered ? { animationDelay: `${dist * 40}ms` } : undefined}
-      aria-label={tile.isCore ? 'Jádro' : tile.locked ? 'Zamčená dlaždice' : 'Dlaždice'}
+      aria-label={tile.isCore ? t('ariaCore') : tile.locked ? t('ariaLocked') : t('ariaTile')}
     >
       <svg
         className="pipes"
         viewBox="0 0 100 100"
         style={{ transform: `rotate(${rotation * 90}deg)` }}
       >
-        {EDGE.map(([x, y], d) =>
-          base & (1 << d) ? (
-            <line key={d} x1={50} y1={50} x2={x} y2={y} />
-          ) : null,
-        )}
-        {connectors === 1 && <circle className="endcap" cx={50} cy={50} r={11} />}
-        {connectors >= 3 && <circle className="hub" cx={50} cy={50} r={9} />}
-        {tile.isCore && <circle className="core-pulse" cx={50} cy={50} r={16} />}
+        <g key={igniteGen}>
+          {EDGE.map(([x, y], d) => {
+            if ((base & (1 << d)) === 0) return null;
+            if (!igniting) return <line key={d} x1={50} y1={50} x2={x} y2={y} />;
+            const isEntry = d === entryBase;
+            return (
+              <line
+                key={d}
+                className={isEntry ? 'line-in' : 'line-out'}
+                style={{ animationDelay: `${igniteDelay + (isEntry ? 0 : 110)}ms` }}
+                x1={50}
+                y1={50}
+                x2={x}
+                y2={y}
+              />
+            );
+          })}
+          {connectors === 1 && (
+            <circle
+              className={igniting ? 'endcap dot-in' : 'endcap'}
+              style={igniting ? { animationDelay: `${igniteDelay + 150}ms` } : undefined}
+              cx={50}
+              cy={50}
+              r={11}
+            />
+          )}
+          {connectors >= 3 && (
+            <circle
+              className={igniting ? 'hub dot-in' : 'hub'}
+              style={igniting ? { animationDelay: `${igniteDelay + 150}ms` } : undefined}
+              cx={50}
+              cy={50}
+              r={9}
+            />
+          )}
+          {tile.isCore && <circle className="core-pulse" cx={50} cy={50} r={16} />}
+        </g>
       </svg>
       {tile.locked && !tile.isCore && (
         <svg className="lock-icon" viewBox="0 0 24 24">

@@ -24,4 +24,5 @@ export interface GameState {
   moves: number;
   powered: boolean[]; // přepočítáno po každém tahu
   won: boolean;
+  par: number; // minimální počet tahů (součet nejkratších rotací k řešení)
 }

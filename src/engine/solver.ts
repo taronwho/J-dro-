@@ -27,6 +27,7 @@ export interface FlowResult {
   powered: boolean[];
   colors: number[]; // barva nejbližšího jádra, -1 = nenapájeno
   dists: number[]; // BFS vzdálenost od nejbližšího jádra, -1 = nenapájeno
+  entryDirs: number[]; // strana, kterou energie do buňky vtekla, -1 = jádro/nenapájeno
 }
 
 // Multi-source BFS ze všech jader; při remíze vyhrává jádro s nižším indexem barvy
@@ -35,6 +36,7 @@ export function computeFlow(tiles: Tile[], config: LevelConfig): FlowResult {
   const powered = new Array<boolean>(n).fill(false);
   const colors = new Array<number>(n).fill(-1);
   const dists = new Array<number>(n).fill(-1);
+  const entryDirs = new Array<number>(n).fill(-1);
 
   const cores: number[] = [];
   for (let i = 0; i < n; i++) if (tiles[i].isCore) cores.push(i);
@@ -60,11 +62,12 @@ export function computeFlow(tiles: Tile[], config: LevelConfig): FlowResult {
       powered[nb] = true;
       colors[nb] = colors[cur];
       dists[nb] = dists[cur] + 1;
+      entryDirs[nb] = opposite(dir);
       queue.push(nb);
     }
   }
 
-  return { powered, colors, dists };
+  return { powered, colors, dists, entryDirs };
 }
 
 export function computePowered(state: GameState): boolean[] {

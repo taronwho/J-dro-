@@ -129,11 +129,25 @@ export function generateLevel(config: LevelConfig): GameState {
     }
   }
 
+  // Par: součet minimálních rotací každé dlaždice k masce řešení
+  let par = 0;
+  for (const t of tiles) {
+    if (t.locked) continue;
+    let m = t.mask;
+    let r = 0;
+    while (m !== t.solutionMask && r < 4) {
+      m = rotateCw(m);
+      r++;
+    }
+    par += r;
+  }
+
   return {
     tiles,
     config,
     moves: 0,
     powered: flow.powered,
     won: flow.powered.every(Boolean),
+    par,
   };
 }

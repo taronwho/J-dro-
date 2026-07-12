@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LEVELS } from '../levels/levels';
-import { generateLevel } from './generator';
+import { generateLevel, rotateCw } from './generator';
 import { isWon, neighborIndex } from './solver';
 import type { Dir, GameState } from './types';
 
@@ -58,6 +58,24 @@ describe('generátor levelů', () => {
         const state = generateLevel(config);
         const diff = state.tiles.filter((t) => t.mask !== t.solutionMask).length;
         expect(diff).toBeGreaterThanOrEqual(3);
+      });
+
+      it('par: odpovídá minimálním rotacím a vede k výhře', () => {
+        const state = generateLevel(config);
+        let sum = 0;
+        for (const t of state.tiles) {
+          if (t.locked) continue;
+          let m = t.mask;
+          let r = 0;
+          while (m !== t.solutionMask && r < 4) {
+            m = rotateCw(m);
+            r++;
+          }
+          sum += r;
+        }
+        expect(state.par).toBe(sum);
+        expect(state.par).toBeGreaterThanOrEqual(3);
+        expect(isWon(solvedCopy(state))).toBe(true);
       });
     });
   }

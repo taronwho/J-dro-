@@ -78,8 +78,37 @@ button:disabled {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.2rem;
+  gap: 1rem;
   padding: 2rem 1rem;
+}
+
+.lang-switch {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.lang-btn {
+  padding: 0.3rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--tile-border);
+  background: var(--tile-bg);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.lang-btn.active {
+  border-color: var(--core-0);
+  color: var(--core-0);
+}
+
+.stars-total {
+  margin: 0;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
 }
 
 .title {
@@ -140,11 +169,52 @@ button:disabled {
   transform: translateY(-2px);
 }
 
-.level-check {
-  position: absolute;
-  top: 3px;
-  right: 6px;
-  font-size: 0.7rem;
+.level-btn .level-num {
+  display: block;
+  line-height: 1.1;
+}
+
+/* ---------- Hvězdy ---------- */
+
+.star {
+  color: #3a3a52;
+}
+
+.star.filled {
+  color: #ffd84d;
+  text-shadow: 0 0 8px rgba(255, 216, 77, 0.6);
+}
+
+.lvl-stars {
+  display: block;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  margin-top: 2px;
+}
+
+.win-stars {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 2rem;
+  margin: 0.3rem 0;
+}
+
+.star.big.pop {
+  animation: star-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+@keyframes star-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.35);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* ---------- Herní obrazovka ---------- */
@@ -168,18 +238,22 @@ button:disabled {
 
 .hud-info {
   display: flex;
-  align-items: baseline;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .hud-level {
   font-size: 1.15rem;
   letter-spacing: 0.12em;
+  white-space: nowrap;
 }
 
 .hud-moves {
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-size: 0.9rem;
 }
 
 .hud-buttons {
@@ -226,6 +300,56 @@ button:disabled {
   stroke-width: 11;
   stroke-linecap: round;
   transition: stroke 0.15s;
+}
+
+/* Rozlití světla do nově připojené dlaždice: vstupní linka se rozsvěcí
+   od hrany (odkud světlo přichází) ke středu, ostatní pak od středu ven.
+   Linky mají délku 50 (střed → hrana ve viewBoxu 100×100). */
+
+.pipes .line-in,
+.pipes .line-out {
+  stroke-dasharray: 50;
+  stroke-dashoffset: 0;
+}
+
+.pipes .line-in {
+  animation: reveal-in 170ms ease-out backwards;
+}
+
+.pipes .line-out {
+  animation: reveal-out 170ms ease-out backwards;
+}
+
+@keyframes reveal-in {
+  from {
+    stroke-dashoffset: -50;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes reveal-out {
+  from {
+    stroke-dashoffset: 50;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.pipes .dot-in {
+  transform-origin: 50px 50px;
+  animation: dot-in 200ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+@keyframes dot-in {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
 }
 
 .pipes .endcap,
@@ -338,7 +462,9 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(10, 10, 18, 0.78);
+  background: rgba(10, 10, 18, 0.85);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   border-radius: 10px;
   animation: overlay-in 250ms ease-out;
 }
@@ -367,8 +493,21 @@ button:disabled {
 }
 
 .overlay-moves {
-  margin: 0.2rem 0 0.8rem;
+  margin: 0.2rem 0 0;
   color: var(--text-dim);
+}
+
+.overlay-record {
+  margin: 0 0 0.6rem;
+  color: #ffd84d;
+  letter-spacing: 0.08em;
+  animation: star-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) 500ms backwards;
+}
+
+.overlay-best {
+  margin: 0 0 0.6rem;
+  color: var(--text-dim);
+  font-size: 0.9rem;
 }
 
 .overlay-buttons {
