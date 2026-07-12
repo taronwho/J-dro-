@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useI18n, type TKey } from '../i18n/i18n';
+import { Icon, type IconName } from './Icon';
 
 export type HelpSection =
   | 'goal'
@@ -16,23 +17,24 @@ export type HelpSection =
 
 interface SectionDef {
   id: HelpSection;
-  icon: string;
+  icon: IconName;
+  color: string;
   title: TKey;
   text: TKey;
 }
 
 const SECTIONS: SectionDef[] = [
-  { id: 'goal', icon: '⚡', title: 'helpGoal', text: 'helpGoalText' },
-  { id: 'colors', icon: '🎨', title: 'helpColors', text: 'helpColorsText' },
-  { id: 'target', icon: '🎯', title: 'helpTarget', text: 'helpTargetText' },
-  { id: 'wrap', icon: '🌐', title: 'helpWrap', text: 'helpWrapText' },
-  { id: 'lock', icon: '🔒', title: 'helpLock', text: 'helpLockText' },
-  { id: 'limit', icon: '⏳', title: 'helpLimit', text: 'helpLimitText' },
-  { id: 'hints', icon: '💡', title: 'helpHints', text: 'helpHintsText' },
-  { id: 'streak', icon: '🔥', title: 'helpStreak', text: 'helpStreakText' },
-  { id: 'achievements', icon: '🏆', title: 'achievements', text: 'helpAchText' },
-  { id: 'daily', icon: '🗓️', title: 'dailyTitle', text: 'helpDailyText' },
-  { id: 'endless', icon: '♾️', title: 'endlessTitle', text: 'helpEndlessText' },
+  { id: 'goal', icon: 'bolt', color: 'c-cyan', title: 'helpGoal', text: 'helpGoalText' },
+  { id: 'colors', icon: 'cores', color: 'c-dim', title: 'helpColors', text: 'helpColorsText' },
+  { id: 'target', icon: 'target', color: 'c-gold', title: 'helpTarget', text: 'helpTargetText' },
+  { id: 'wrap', icon: 'torus', color: 'c-cyan', title: 'helpWrap', text: 'helpWrapText' },
+  { id: 'lock', icon: 'lock', color: 'c-dim', title: 'helpLock', text: 'helpLockText' },
+  { id: 'limit', icon: 'hourglass', color: 'c-amber', title: 'helpLimit', text: 'helpLimitText' },
+  { id: 'hints', icon: 'bulb', color: 'c-amber', title: 'helpHints', text: 'helpHintsText' },
+  { id: 'streak', icon: 'flame', color: 'c-flame', title: 'helpStreak', text: 'helpStreakText' },
+  { id: 'achievements', icon: 'trophy', color: 'c-gold', title: 'achievements', text: 'helpAchText' },
+  { id: 'daily', icon: 'calendar', color: 'c-cyan', title: 'dailyTitle', text: 'helpDailyText' },
+  { id: 'endless', icon: 'infinity', color: 'c-magenta', title: 'endlessTitle', text: 'helpEndlessText' },
 ];
 
 interface HelpProps {
@@ -53,7 +55,9 @@ export function Help({ highlight, onClose }: HelpProps) {
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>❓ {t('helpTitle')}</h2>
+        <h2>
+          <Icon name="help" className="c-cyan heading-icon" /> {t('helpTitle')}
+        </h2>
         <ul className="help-list" ref={listRef}>
           {SECTIONS.map((s) => (
             <li
@@ -61,7 +65,9 @@ export function Help({ highlight, onClose }: HelpProps) {
               data-section={s.id}
               className={highlight === s.id ? 'help-item highlight' : 'help-item'}
             >
-              <span className="help-icon">{s.icon}</span>
+              <span className={`help-icon ${s.color}`}>
+                <Icon name={s.icon} />
+              </span>
               <span className="help-text">
                 <strong>{t(s.title)}</strong>
                 <small>{t(s.text)}</small>

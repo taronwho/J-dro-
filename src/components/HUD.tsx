@@ -1,4 +1,5 @@
 import { useI18n } from '../i18n/i18n';
+import { Icon } from './Icon';
 
 interface HUDProps {
   title: string;
@@ -39,7 +40,7 @@ export function HUD({
             aria-label={t('hintTitle')}
             disabled={hints < 1 && !hintMode}
           >
-            💡 {hints}
+            <Icon name="bulb" className="chip-icon" /> {hints}
           </button>
           <button type="button" className="btn" onClick={onReset}>
             {t('reset')}
@@ -65,7 +66,7 @@ export function HUD({
           onClick={onHelp}
           aria-label={t('helpTitle')}
         >
-          ?
+          <Icon name="help" />
         </button>
       </div>
     </header>

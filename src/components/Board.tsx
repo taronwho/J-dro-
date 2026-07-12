@@ -3,6 +3,7 @@ import { computeFlow } from '../engine/solver';
 import type { GameState } from '../engine/types';
 import { useI18n } from '../i18n/i18n';
 import type { Ignite, LastWin } from './App';
+import { Icon } from './Icon';
 import { TileView } from './Tile';
 
 interface BoardProps {
@@ -83,7 +84,7 @@ export function Board({
                     className={i <= lastWin.stars ? 'star big filled pop' : 'star big'}
                     style={{ animationDelay: `${i * 160}ms` }}
                   >
-                    ★
+                    <Icon name="star" />
                   </span>
                 ))}
               </div>
@@ -99,14 +100,22 @@ export function Board({
               ) : null)}
             {lastWin?.hintUsed && <p className="overlay-note">{t('hintCapNote')}</p>}
             {lastWin?.hintGained && (
-              <p className="overlay-bonus">💡 {t('hintEarned')}</p>
+              <p className="overlay-bonus">
+                <Icon name="bulb" className="inline-icon c-amber" /> {t('hintEarned')}
+              </p>
             )}
             {lastWin?.hintGainedDaily && (
-              <p className="overlay-bonus">💡 {t('hintEarnedDaily')}</p>
+              <p className="overlay-bonus">
+                <Icon name="bulb" className="inline-icon c-amber" />{' '}
+                {t('hintEarnedDaily')}
+              </p>
             )}
             {lastWin && lastWin.achievements.length > 0 && (
               <div className="overlay-achievements">
-                <p className="overlay-bonus">🏆 {t('newAchievement')}</p>
+                <p className="overlay-bonus">
+                  <Icon name="trophy" className="inline-icon c-gold" />{' '}
+                  {t('newAchievement')}
+                </p>
                 {lastWin.achievements.map((a) => (
                   <p key={a.id} className="overlay-ach-name">
                     {a.name[lang]}

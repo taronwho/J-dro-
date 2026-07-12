@@ -4,6 +4,7 @@ import { CHAPTER_COUNT, CHAPTER_SIZE, LEVELS } from '../levels/levels';
 import { ACHIEVEMENTS, totalStars } from '../meta/achievements';
 import type { Progress } from './App';
 import type { HelpSection } from './Help';
+import { Icon } from './Icon';
 
 interface MenuProps {
   progress: Progress;
@@ -18,7 +19,7 @@ function Stars({ count }: { count: number }) {
     <span className="lvl-stars" aria-hidden="true">
       {[1, 2, 3].map((i) => (
         <span key={i} className={i <= count ? 'star filled' : 'star'}>
-          ★
+          <Icon name="star" />
         </span>
       ))}
     </span>
@@ -58,7 +59,7 @@ export function Menu({ progress, onSelect, onDaily, onEndless, onHelp }: MenuPro
           onClick={() => onHelp(null)}
           aria-label={t('helpTitle')}
         >
-          ?
+          <Icon name="help" />
         </button>
       </div>
       <h1 className="title">CORE</h1>
@@ -67,56 +68,73 @@ export function Menu({ progress, onSelect, onDaily, onEndless, onHelp }: MenuPro
       <div className="stats-row">
         <button
           type="button"
-          className="stat-chip stat-btn"
+          className="stat-chip stat-btn c-gold"
           onClick={() => onHelp('target')}
         >
-          <span className="star filled">★</span> {stars} / {maxStars}
+          <Icon name="star" className="chip-icon" /> {stars} / {maxStars}
         </button>
         <button
           type="button"
-          className="stat-chip stat-btn"
+          className="stat-chip stat-btn c-amber"
           onClick={() => onHelp('hints')}
         >
-          💡 {progress.hints}
+          <Icon name="bulb" className="chip-icon" /> {progress.hints}
         </button>
         <button
           type="button"
-          className="stat-chip stat-btn"
+          className="stat-chip stat-btn c-cyan"
           onClick={() => onHelp('goal')}
         >
-          ⚡ {progress.completed.length} / {LEVELS.length}
+          <Icon name="bolt" className="chip-icon" /> {progress.completed.length} /{' '}
+          {LEVELS.length}
         </button>
         <button
           type="button"
-          className="stat-chip stat-btn"
+          className="stat-chip stat-btn c-flame"
           onClick={() => onHelp('streak')}
         >
-          🔥 {progress.bestStreak}
+          <Icon name="flame" className="chip-icon" /> {progress.bestStreak}
         </button>
         <button
           type="button"
-          className="stat-chip stat-btn"
+          className="stat-chip stat-btn c-gold"
           onClick={() => setShowAchievements(true)}
         >
-          🏆 {progress.achievements.length} / {ACHIEVEMENTS.length}
+          <Icon name="trophy" className="chip-icon" /> {progress.achievements.length} /{' '}
+          {ACHIEVEMENTS.length}
         </button>
       </div>
 
       <div className="modes-row">
         <button type="button" className="mode-btn" onClick={onDaily}>
-          <span className="mode-icon">🗓️</span>
+          <span className="mode-icon c-cyan">
+            <Icon name="calendar" />
+          </span>
           <span className="mode-text">
             <strong>{t('dailyTitle')}</strong>
             <small>
-              {dailyDoneToday ? `✓ ${t('dailyDone')}` : `🔥 ${progress.daily.streak}`}
+              {dailyDoneToday ? (
+                <>
+                  <Icon name="check" className="inline-icon c-cyan" /> {t('dailyDone')}
+                </>
+              ) : (
+                <>
+                  <Icon name="flame" className="inline-icon c-flame" />{' '}
+                  {progress.daily.streak}
+                </>
+              )}
             </small>
           </span>
         </button>
         <button type="button" className="mode-btn" onClick={onEndless}>
-          <span className="mode-icon">♾️</span>
+          <span className="mode-icon c-magenta">
+            <Icon name="infinity" />
+          </span>
           <span className="mode-text">
             <strong>{t('endlessTitle')}</strong>
-            <small>⚡ {progress.endless.total}</small>
+            <small>
+              <Icon name="bolt" className="inline-icon c-cyan" /> {progress.endless.total}
+            </small>
           </span>
         </button>
       </div>
@@ -134,8 +152,10 @@ export function Menu({ progress, onSelect, onDaily, onEndless, onHelp }: MenuPro
             <header className="chapter-head">
               <h2>{t('sector', { n: c + 1 })}</h2>
               <span className="chapter-stars">
-                <span className="star filled">★</span> {chapterStars} /{' '}
-                {CHAPTER_SIZE * 3}
+                <span className="star filled">
+                  <Icon name="star" />
+                </span>{' '}
+                {chapterStars} / {CHAPTER_SIZE * 3}
               </span>
             </header>
             <div className="level-grid">
@@ -171,13 +191,17 @@ export function Menu({ progress, onSelect, onDaily, onEndless, onHelp }: MenuPro
       {showAchievements && (
         <div className="modal-backdrop" onClick={() => setShowAchievements(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>🏆 {t('achievements')}</h2>
+            <h2>
+              <Icon name="trophy" className="c-gold heading-icon" /> {t('achievements')}
+            </h2>
             <ul className="ach-list">
               {ACHIEVEMENTS.map((a) => {
                 const owned = progress.achievements.includes(a.id);
                 return (
                   <li key={a.id} className={owned ? 'ach owned' : 'ach'}>
-                    <span className="ach-icon">{owned ? '🏆' : '🔒'}</span>
+                    <span className={owned ? 'ach-icon c-gold' : 'ach-icon c-dim'}>
+                      <Icon name={owned ? 'trophy' : 'lock'} />
+                    </span>
                     <span className="ach-text">
                       <strong>{a.name[lang]}</strong>
                       <small>{a.desc[lang]}</small>
