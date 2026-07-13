@@ -3,7 +3,7 @@ import { generateLevel, rotateCw } from '../engine/generator';
 import { applyMelt, checkWin, computeFlow } from '../engine/solver';
 import type { GameState, LevelConfig, Tile } from '../engine/types';
 import { detectLang, I18nContext, makeT, persistLang, type Lang } from '../i18n/i18n';
-import { LEVELS, LEVEL_COUNT } from '../levels/levels';
+import { LEVELS, LEVEL_COUNT, PACKS, type PackId } from '../levels/levels';
 import { newlyUnlocked, type AchievementDef } from '../meta/achievements';
 import { isSoundEnabled, setSoundEnabled, sfx } from '../sound';
 import { Board } from './Board';
@@ -15,6 +15,7 @@ type Screen = 'menu' | 'game' | 'victory';
 
 export type Mode =
   | { kind: 'level'; id: number }
+  | { kind: 'pack'; packId: PackId; index: number } // index 1-based v balíčku
   | { kind: 'daily' }
   | { kind: 'endless' }
   | { kind: 'blackout' }
@@ -53,6 +54,8 @@ export interface Progress {
   endless: { total: number };
   blackout: { total: number };
   rush: { best: number };
+  packs: Record<string, number>; // odemčený index v každém balíčku výzev (1+)
+  allUnlocked: boolean; // testovací odemčení (#unlock-all) — platí i pro nové levely
 }
 
 // Kaskáda rozsvícení: delays[i] v ms (-1 = bez animace), entries[i] = strana vstupu světla
@@ -87,6 +90,8 @@ const EMPTY_PROGRESS: Progress = {
   endless: { total: 0 },
   blackout: { total: 0 },
   rush: { best: 0 },
+  packs: {},
+  allUnlocked: false,
 };
 
 // Fallback do paměti, když localStorage není dostupný
@@ -114,8 +119,11 @@ function loadProgress(): Progress {
           Array.isArray(value) ? value.filter((x): x is number => typeof x === 'number') : [];
         const daily = parsed.daily;
         const endless = parsed.endless;
+        const allUnlocked = parsed.allUnlocked === true;
         return {
-          unlocked: Math.min(Math.max(Math.floor(parsed.unlocked), 1), LEVEL_COUNT),
+          unlocked: allUnlocked
+            ? LEVEL_COUNT
+            : Math.min(Math.max(Math.floor(parsed.unlocked), 1), LEVEL_COUNT),
           completed: nums(parsed.completed),
           best,
           hints: typeof parsed.hints === 'number' ? Math.max(0, parsed.hints) : 0,
@@ -144,6 +152,15 @@ function loadProgress(): Progress {
             parsed.rush && typeof parsed.rush.best === 'number'
               ? { best: parsed.rush.best }
               : { best: 0 },
+          packs:
+            parsed.packs && typeof parsed.packs === 'object'
+              ? Object.fromEntries(
+                  Object.entries(parsed.packs).filter(
+                    ([, v]) => typeof v === 'number',
+                  ),
+                )
+              : {},
+          allUnlocked,
         };
       }
     }
@@ -270,13 +287,15 @@ export function App() {
     document.documentElement.lang = lang;
   }, [lang]);
 
-  // Odemykací odkaz pro testování: …/#unlock-all odemkne všechny levely
+  // Odemykací odkaz pro testování: …/#unlock-all odemkne trvale všechny
+  // levely (včetně později přidaných sektorů)
   useEffect(() => {
     if (window.location.hash === '#unlock-all') {
       setProgress((prev) => {
         const updated: Progress = {
           ...prev,
           unlocked: LEVEL_COUNT,
+          allUnlocked: true,
           hints: Math.max(prev.hints, 10),
         };
         saveProgress(updated);
@@ -325,6 +344,11 @@ export function App() {
 
   const startLevel = (id: number): void =>
     startConfig(LEVELS[id - 1], { kind: 'level', id });
+  const startPack = (packId: PackId, index: number): void => {
+    const pack = PACKS.find((p) => p.id === packId);
+    if (pack === undefined || index < 1 || index > pack.levels.length) return;
+    startConfig(pack.levels[index - 1], { kind: 'pack', packId, index });
+  };
   const startDaily = (): void => startConfig(dailyConfig(new Date()), { kind: 'daily' });
   const startEndless = (): void => startConfig(endlessConfig(), { kind: 'endless' });
   const startBlackout = (): void => startConfig(blackoutConfig(), { kind: 'blackout' });
@@ -407,8 +431,9 @@ export function App() {
     let bestMoves: number | null = null;
     let hintGained = false;
 
-    if (mode.kind === 'level') {
-      const id = mode.id;
+    if (mode.kind === 'level' || mode.kind === 'pack') {
+      // kampaň i balíčky výzev sdílejí postup přes unikátní id levelu
+      const id = mode.kind === 'level' ? mode.id : next.config.id;
       const prevBest = base.best[id];
       newRecord = prevBest === undefined || next.moves < prevBest.moves;
       bestMoves = newRecord ? next.moves : prevBest.moves;
@@ -416,7 +441,10 @@ export function App() {
       const streak = stars === 3 ? base.streak + 1 : 0;
       updated = {
         ...base,
-        unlocked: Math.max(base.unlocked, Math.min(id + 1, LEVEL_COUNT)),
+        unlocked:
+          mode.kind === 'level'
+            ? Math.max(base.unlocked, Math.min(mode.id + 1, LEVEL_COUNT))
+            : base.unlocked,
         completed: base.completed.includes(id)
           ? base.completed
           : [...base.completed, id],
@@ -428,6 +456,19 @@ export function App() {
         hintsEarned: hintGained ? [...base.hintsEarned, id] : base.hintsEarned,
         streak,
         bestStreak: Math.max(base.bestStreak, streak),
+        packs:
+          mode.kind === 'pack'
+            ? {
+                ...base.packs,
+                [mode.packId]: Math.max(
+                  base.packs[mode.packId] ?? 1,
+                  Math.min(
+                    mode.index + 1,
+                    PACKS.find((p) => p.id === mode.packId)?.levels.length ?? 1,
+                  ),
+                ),
+              }
+            : base.packs,
       };
     } else if (mode.kind === 'daily') {
       const today = isoDate(new Date());
@@ -608,6 +649,7 @@ export function App() {
       <Menu
         progress={progress}
         onSelect={startLevel}
+        onSelectPack={startPack}
         onDaily={startDaily}
         onEndless={startEndless}
         onBlackout={startBlackout}
@@ -618,26 +660,44 @@ export function App() {
       />
     );
   } else {
+    const packNameKey =
+      mode.kind === 'pack'
+        ? mode.packId === 'colors'
+          ? ('packColors' as const)
+          : mode.packId === 'maze'
+            ? ('packMaze' as const)
+            : ('packIce' as const)
+        : null;
     const title =
       mode.kind === 'level'
         ? i18n.t('level', { n: mode.id })
-        : mode.kind === 'daily'
-          ? i18n.t('dailyTitle')
-          : mode.kind === 'blackout'
-            ? i18n.t('blackoutTitle')
-            : mode.kind === 'rush'
-              ? i18n.t('rushTitle')
-              : i18n.t('endlessTitle');
+        : mode.kind === 'pack' && packNameKey !== null
+          ? `${i18n.t(packNameKey)} ${mode.index}`
+          : mode.kind === 'daily'
+            ? i18n.t('dailyTitle')
+            : mode.kind === 'blackout'
+              ? i18n.t('blackoutTitle')
+              : mode.kind === 'rush'
+                ? i18n.t('rushTitle')
+                : i18n.t('endlessTitle');
+    const packLen =
+      mode.kind === 'pack'
+        ? (PACKS.find((p) => p.id === mode.packId)?.levels.length ?? 0)
+        : 0;
     const onNext =
       mode.kind === 'level'
         ? mode.id < LEVEL_COUNT
           ? () => startLevel(mode.id + 1)
           : null
-        : mode.kind === 'endless'
-          ? () => startEndless()
-          : mode.kind === 'blackout'
-            ? () => startBlackout()
-            : null;
+        : mode.kind === 'pack'
+          ? mode.index < packLen
+            ? () => startPack(mode.packId, mode.index + 1)
+            : null
+          : mode.kind === 'endless'
+            ? () => startEndless()
+            : mode.kind === 'blackout'
+              ? () => startBlackout()
+              : null;
     content = (
       <div className="game-screen">
         <HUD

@@ -1,14 +1,22 @@
 import { useState } from 'react';
-import { LANGS, useI18n } from '../i18n/i18n';
-import { CHAPTER_COUNT, CHAPTER_SIZE, LEVELS } from '../levels/levels';
+import { LANGS, useI18n, type TKey } from '../i18n/i18n';
+import {
+  CHAPTER_COUNT,
+  CHAPTER_SIZE,
+  LEVELS,
+  PACKS,
+  PACK_LEVEL_TOTAL,
+  type PackId,
+} from '../levels/levels';
 import { ACHIEVEMENTS, totalStars } from '../meta/achievements';
 import type { Progress } from './App';
 import type { HelpSection } from './Help';
-import { Icon } from './Icon';
+import { Icon, type IconName } from './Icon';
 
 interface MenuProps {
   progress: Progress;
   onSelect: (id: number) => void;
+  onSelectPack: (packId: PackId, index: number) => void;
   onDaily: () => void;
   onEndless: () => void;
   onBlackout: () => void;
@@ -17,6 +25,12 @@ interface MenuProps {
   soundOn: boolean;
   onSoundToggle: () => void;
 }
+
+const PACK_META: Record<PackId, { name: TKey; icon: IconName; color: string; help: HelpSection }> = {
+  colors: { name: 'packColors', icon: 'cores', color: 'c-magenta', help: 'targets' },
+  maze: { name: 'packMaze', icon: 'wall', color: 'c-dim', help: 'walls' },
+  ice: { name: 'packIce', icon: 'snowflake', color: 'c-cyan', help: 'frozen' },
+};
 
 function Stars({ count }: { count: number }) {
   return (
@@ -40,6 +54,7 @@ function isoToday(): string {
 export function Menu({
   progress,
   onSelect,
+  onSelectPack,
   onDaily,
   onEndless,
   onBlackout,
@@ -51,7 +66,8 @@ export function Menu({
   const { lang, setLang, t } = useI18n();
   const [showAchievements, setShowAchievements] = useState(false);
   const stars = totalStars(progress);
-  const maxStars = LEVELS.length * 3;
+  const totalLevels = LEVELS.length + PACK_LEVEL_TOTAL;
+  const maxStars = totalLevels * 3;
   const dailyDoneToday = progress.daily.last === isoToday();
 
   return (
@@ -108,7 +124,7 @@ export function Menu({
           onClick={() => onHelp('goal')}
         >
           <Icon name="bolt" className="chip-icon" /> {progress.completed.length} /{' '}
-          {LEVELS.length}
+          {totalLevels}
         </button>
         <button
           type="button"
@@ -184,6 +200,69 @@ export function Menu({
         </button>
       </div>
 
+      <h2 className="menu-section">{t('packsTitle')}</h2>
+      {PACKS.map((pack) => {
+        const meta = PACK_META[pack.id];
+        const unlockedIdx = progress.allUnlocked
+          ? pack.levels.length
+          : (progress.packs[pack.id] ?? 1);
+        const packStars = pack.levels.reduce(
+          (sum, { id }) => sum + (progress.best[id]?.stars ?? 0),
+          0,
+        );
+        return (
+          <section key={pack.id} className="chapter">
+            <header className="chapter-head">
+              <h2>
+                <button
+                  type="button"
+                  className={`pack-title ${meta.color}`}
+                  onClick={() => onHelp(meta.help)}
+                >
+                  <Icon name={meta.icon} className="inline-icon" /> {t(meta.name)}
+                </button>
+              </h2>
+              <span className="chapter-stars">
+                <span className="star filled">
+                  <Icon name="star" />
+                </span>{' '}
+                {packStars} / {pack.levels.length * 3}
+              </span>
+            </header>
+            <div className="level-grid pack-grid">
+              {pack.levels.map(({ id }, k) => {
+                const index = k + 1;
+                const done = progress.completed.includes(id);
+                const isUnlocked = index <= unlockedIdx;
+                const cls = done
+                  ? 'level-btn done'
+                  : isUnlocked
+                    ? 'level-btn open'
+                    : 'level-btn';
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className={cls}
+                    disabled={!isUnlocked}
+                    onClick={() => onSelectPack(pack.id, index)}
+                    aria-label={
+                      isUnlocked
+                        ? `${t(meta.name)} ${index}`
+                        : t('ariaLockedLevel')
+                    }
+                  >
+                    <span className="level-num">{index}</span>
+                    {done && <Stars count={progress.best[id]?.stars ?? 1} />}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
+
+      <h2 className="menu-section">{t('campaignTitle')}</h2>
       {Array.from({ length: CHAPTER_COUNT }, (_, c) => {
         const from = c * CHAPTER_SIZE + 1;
         const to = from + CHAPTER_SIZE - 1;

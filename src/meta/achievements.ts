@@ -1,4 +1,5 @@
 import type { LevelConfig } from '../engine/types';
+import { PACKS } from '../levels/levels';
 
 type Lang = 'cs' | 'en' | 'de';
 
@@ -280,6 +281,18 @@ export const ACHIEVEMENTS: AchievementDef[] = [
       de: 'Schließe Level 120 ab.',
     },
     check: (p) => p.completed.includes(120),
+  },
+  {
+    id: 'specialist',
+    reward: 5,
+    name: { cs: 'Specialista', en: 'Specialist', de: 'Spezialist' },
+    desc: {
+      cs: 'Dokonči všechny levely výzev.',
+      en: 'Complete all challenge levels.',
+      de: 'Schließe alle Herausforderungs-Level ab.',
+    },
+    check: (p) =>
+      PACKS.every((pack) => pack.levels.every((l) => p.completed.includes(l.id))),
   },
 ];
 

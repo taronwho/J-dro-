@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { LEVELS } from '../levels/levels';
+import { LEVELS, PACKS } from '../levels/levels';
 import { bitCount, generateLevel, rotateCw } from './generator';
-import { applyMelt, computeColors, isWon, neighborIndex } from './solver';
+import { applyMelt, computeColors, isWon, neighborIndex, opposite } from './solver';
 import type { Dir, GameState } from './types';
 
 function solvedCopy(state: GameState): GameState {
@@ -11,8 +11,15 @@ function solvedCopy(state: GameState): GameState {
   };
 }
 
+const ALL_CONFIGS = [...LEVELS, ...PACKS.flatMap((p) => p.levels)];
+
 describe('generátor levelů', () => {
-  for (const config of LEVELS) {
+  it('id všech levelů (kampaň + balíčky) jsou unikátní', () => {
+    const ids = ALL_CONFIGS.map((c) => c.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  for (const config of ALL_CONFIGS) {
     describe(`level ${config.id} (${config.width}×${config.height}${config.wrap ? ', wrap' : ''})`, () => {
       it('řešitelnost: stav řešení vyhrává', () => {
         const state = generateLevel(config);
@@ -88,15 +95,26 @@ describe('generátor levelů', () => {
         }
       });
 
-      it('zdi: správný počet, bez konektorů, zamčené', () => {
+      it('zdi: symetrické hrany, řešení přes ně nevede', () => {
         const state = generateLevel(config);
-        const wallTiles = state.tiles.filter((t) => t.isWall === true);
-        expect(wallTiles.length).toBe(config.wallCount ?? 0);
-        for (const wall of wallTiles) {
-          expect(wall.mask).toBe(0);
-          expect(wall.solutionMask).toBe(0);
-          expect(wall.locked).toBe(true);
-        }
+        let canonical = 0;
+        state.tiles.forEach((tile, i) => {
+          const wm = tile.wallMask ?? 0;
+          // spoj v řešení nikdy nekříží zeď
+          expect(tile.solutionMask & wm).toBe(0);
+          for (let d = 0; d < 4; d++) {
+            if ((wm & (1 << d)) === 0) continue;
+            const nb = neighborIndex(i, d as Dir, config);
+            expect(nb).not.toBe(-1);
+            // zeď je oboustranná
+            expect(
+              (state.tiles[nb].wallMask ?? 0) & (1 << opposite(d as Dir)),
+            ).not.toBe(0);
+            if (d === 1 || d === 2) canonical++;
+          }
+        });
+        if ((config.wallCount ?? 0) === 0) expect(canonical).toBe(0);
+        else expect(canonical).toBeGreaterThan(0);
       });
 
       it('barevné cíle: správný počet, koncovky, splněné v řešení', () => {

@@ -54,15 +54,8 @@ export function TileView({
   const { t } = useI18n();
   const [shaking, setShaking] = useState(false);
 
-  if (tile.isWall === true) {
-    return (
-      <div className="tile wall" aria-hidden="true">
-        <Icon name="wall" className="wall-icon" />
-      </div>
-    );
-  }
-
   const frozen = tile.frozen === true;
+  const wallMask = tile.wallMask ?? 0;
 
   const handleClick = (): void => {
     if ((tile.locked || frozen) && !hintMode) {
@@ -221,6 +214,12 @@ export function TileView({
           />
         )}
       </svg>
+
+      {/* zdi mezi dlaždicemi — neprostupné hrany jako v bludišti */}
+      {(wallMask & 1) !== 0 && <span className="edge-wall wn" aria-hidden="true" />}
+      {(wallMask & 2) !== 0 && <span className="edge-wall we" aria-hidden="true" />}
+      {(wallMask & 4) !== 0 && <span className="edge-wall ws" aria-hidden="true" />}
+      {(wallMask & 8) !== 0 && <span className="edge-wall ww" aria-hidden="true" />}
 
       {frozen && tile.frozenColor !== undefined && (
         <Icon name="snowflake" className={`frozen-icon fz${tile.frozenColor}`} />

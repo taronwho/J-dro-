@@ -238,6 +238,46 @@ button:disabled {
   font-size: 0.75rem;
 }
 
+.menu-section {
+  margin: 1.2rem 0 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  width: min(92vw, 560px);
+  text-align: left;
+  border-bottom: 1px solid var(--tile-border);
+  padding-bottom: 0.4rem;
+}
+
+.pack-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  padding: 0;
+}
+
+.pack-title .icon {
+  filter: drop-shadow(0 0 3px currentColor);
+}
+
+.pack-title:hover {
+  color: var(--text);
+}
+
+.pack-grid {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.pack-grid .level-btn {
+  border-radius: 12px;
+  font-size: 0.95rem;
+}
+
 /* ---------- Kapitoly / sektory ---------- */
 
 .chapter {
@@ -638,26 +678,47 @@ button:disabled {
   opacity: 0;
 }
 
-/* ---------- Zdi ---------- */
+/* ---------- Zdi mezi dlaždicemi ---------- */
 
-.tile.wall {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background:
-    repeating-linear-gradient(
-      -45deg,
-      rgba(255, 255, 255, 0.03) 0 8px,
-      transparent 8px 16px
-    ),
-    linear-gradient(145deg, #23232e 0%, #15151d 100%);
-  border-color: #34344a;
-  cursor: default;
+.edge-wall {
+  position: absolute;
+  background: linear-gradient(180deg, #9aa0c4, #565c80);
+  border-radius: 4px;
+  box-shadow:
+    0 0 6px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  z-index: 3;
+  pointer-events: none;
 }
 
-.wall-icon {
-  font-size: 1.6em;
-  color: #3f3f56;
+.edge-wall.wn {
+  top: 0;
+  left: 4%;
+  right: 4%;
+  height: 8%;
+}
+
+.edge-wall.ws {
+  bottom: 0;
+  left: 4%;
+  right: 4%;
+  height: 8%;
+}
+
+.edge-wall.we {
+  right: 0;
+  top: 4%;
+  bottom: 4%;
+  width: 8%;
+  background: linear-gradient(90deg, #565c80, #9aa0c4);
+}
+
+.edge-wall.ww {
+  left: 0;
+  top: 4%;
+  bottom: 4%;
+  width: 8%;
+  background: linear-gradient(90deg, #9aa0c4, #565c80);
 }
 
 /* ---------- Barevné cíle ---------- */

@@ -56,6 +56,7 @@ export function computeFlow(tiles: Tile[], config: LevelConfig): FlowResult {
     for (let d = 0; d < 4; d++) {
       const dir = d as Dir;
       if ((tiles[cur].mask & (1 << dir)) === 0) continue;
+      if (((tiles[cur].wallMask ?? 0) & (1 << dir)) !== 0) continue; // zeď mezi buňkami
       const nb = neighborIndex(cur, dir, config);
       if (nb === -1 || powered[nb]) continue;
       if ((tiles[nb].mask & (1 << opposite(dir))) === 0) continue;
@@ -95,6 +96,7 @@ export function computeColors(tiles: Tile[], config: LevelConfig): number[] {
       for (let d = 0; d < 4; d++) {
         const dir = d as Dir;
         if ((tiles[cur].mask & (1 << dir)) === 0) continue;
+        if (((tiles[cur].wallMask ?? 0) & (1 << dir)) !== 0) continue;
         const nb = neighborIndex(cur, dir, config);
         if (nb === -1 || visited[nb]) continue;
         if ((tiles[nb].mask & (1 << opposite(dir))) === 0) continue;
@@ -111,7 +113,6 @@ export function computeColors(tiles: Tile[], config: LevelConfig): number[] {
 export function checkWin(tiles: Tile[], config: LevelConfig): boolean {
   const { powered } = computeFlow(tiles, config);
   for (let i = 0; i < tiles.length; i++) {
-    if (tiles[i].isWall === true) continue;
     if (!powered[i]) return false;
   }
   const hasTargets = tiles.some((t) => t.targetColor !== undefined);
@@ -144,6 +145,7 @@ export function applyMelt(tiles: Tile[], config: LevelConfig): Tile[] | null {
     if (!melt) {
       for (let d = 0; d < 4 && !melt; d++) {
         const dir = d as Dir;
+        if (((tile.wallMask ?? 0) & (1 << dir)) !== 0) continue; // přes zeď led netaje
         const nb = neighborIndex(i, dir, config);
         if (nb === -1 || (colors[nb] & bit) === 0) continue;
         // soused musí na led mířit konektorem

@@ -28,50 +28,59 @@ export function generateLevel(config: LevelConfig): GameState {
   const { width, height, coreCount, lockedCount } = config;
   const n = width * height;
 
-  // 0. Zdi — jen když je konfigurace žádá; zbytek pole musí zůstat souvislý
-  const walls = new Set<number>();
+  // 0. Zdi mezi dlaždicemi (hrany jako v bludišti) — pole musí zůstat průchozí
+  const wallMask = new Array<number>(n).fill(0);
   if ((config.wallCount ?? 0) > 0) {
-    for (let want = config.wallCount ?? 0; want > 0; want--) {
+    // kanonický výčet hran: (buňka, E) a (buňka, S) pokryje každou hranu jednou
+    const edges: Array<{ cell: number; dir: Dir }> = [];
+    for (let i = 0; i < n; i++) {
+      for (const dir of [1, 2] as Dir[]) {
+        if (neighborIndex(i, dir, config) !== -1) edges.push({ cell: i, dir });
+      }
+    }
+    for (let want = Math.min(config.wallCount ?? 0, edges.length); want > 0; want--) {
       let placed = false;
       for (let attempt = 0; attempt < 40 && !placed; attempt++) {
-        walls.clear();
-        while (walls.size < want) walls.add(Math.floor(rng() * n));
-        // BFS přes ne-zdi: všechno musí být dosažitelné
-        let start = -1;
-        for (let i = 0; i < n; i++) {
-          if (!walls.has(i)) {
-            start = i;
-            break;
-          }
+        wallMask.fill(0);
+        const chosen = new Set<number>();
+        while (chosen.size < want) chosen.add(Math.floor(rng() * edges.length));
+        for (const ei of chosen) {
+          const { cell, dir } = edges[ei];
+          const nb = neighborIndex(cell, dir, config);
+          wallMask[cell] |= 1 << dir;
+          wallMask[nb] |= 1 << opposite(dir);
         }
+        // BFS: každá buňka musí zůstat dosažitelná i se zdmi
         const seen = new Array<boolean>(n).fill(false);
-        seen[start] = true;
-        const queue = [start];
+        seen[0] = true;
+        const queue = [0];
         let head = 0;
         while (head < queue.length) {
           const cur = queue[head++];
           for (let d = 0; d < 4; d++) {
-            const nb = neighborIndex(cur, d as Dir, config);
-            if (nb !== -1 && !seen[nb] && !walls.has(nb)) {
+            const dir = d as Dir;
+            if ((wallMask[cur] & (1 << dir)) !== 0) continue;
+            const nb = neighborIndex(cur, dir, config);
+            if (nb !== -1 && !seen[nb]) {
               seen[nb] = true;
               queue.push(nb);
             }
           }
         }
-        placed = queue.length === n - walls.size;
+        placed = queue.length === n;
       }
       if (placed) break;
-      walls.clear();
+      wallMask.fill(0);
     }
   }
 
-  // 1. Pozice jader — odlišné, mimo zdi a pokud možno nesousedící
+  // 1. Pozice jader — odlišné a pokud možno nesousedící
   const cores: number[] = [];
   let attempts = 0;
   while (cores.length < coreCount) {
     attempts++;
     const c = Math.floor(rng() * n);
-    if (cores.includes(c) || walls.has(c)) continue;
+    if (cores.includes(c)) continue;
     const adjacent = cores.some((o) => {
       for (let d = 0; d < 4; d++) {
         if (neighborIndex(o, d as Dir, config) === c) return true;
@@ -91,8 +100,9 @@ export function generateLevel(config: LevelConfig): GameState {
   const addEdges = (from: number): void => {
     for (let d = 0; d < 4; d++) {
       const dir = d as Dir;
+      if ((wallMask[from] & (1 << dir)) !== 0) continue; // přes zeď strom nevede
       const to = neighborIndex(from, dir, config);
-      if (to !== -1 && !inTree[to] && !walls.has(to)) frontier.push({ from, dir });
+      if (to !== -1 && !inTree[to]) frontier.push({ from, dir });
     }
   };
   const seeds = config.forest === true ? cores : [cores[0]];
@@ -115,17 +125,17 @@ export function generateLevel(config: LevelConfig): GameState {
     addEdges(to);
   }
 
-  // 3. Dlaždice s konektory řešení; zdi jsou trvale zamčené bloky
+  // 3. Dlaždice s konektory řešení
   const tiles: Tile[] = [];
   for (let i = 0; i < n; i++) {
     const coreIdx = cores.indexOf(i);
     tiles.push({
       mask: solution[i],
       solutionMask: solution[i],
-      locked: coreIdx !== -1 || walls.has(i),
+      locked: coreIdx !== -1,
       isCore: coreIdx !== -1,
       ...(coreIdx !== -1 ? { coreColor: coreIdx } : {}),
-      ...(walls.has(i) ? { isWall: true } : {}),
+      ...(wallMask[i] !== 0 ? { wallMask: wallMask[i] } : {}),
     });
   }
 
@@ -154,7 +164,7 @@ export function generateLevel(config: LevelConfig): GameState {
   if ((config.targetCount ?? 0) > 0 && config.forest === true) {
     const endpoints: number[] = [];
     for (let i = 0; i < n; i++) {
-      if (tiles[i].isCore || walls.has(i) || tiles[i].locked) continue;
+      if (tiles[i].isCore || tiles[i].locked) continue;
       if (bitCount(solution[i]) === 1) endpoints.push(i);
     }
     shuffle(endpoints);
@@ -169,12 +179,7 @@ export function generateLevel(config: LevelConfig): GameState {
     const preferFrozen: number[] = [];
     const restFrozen: number[] = [];
     for (let i = 0; i < n; i++) {
-      if (
-        tiles[i].isCore ||
-        walls.has(i) ||
-        tiles[i].locked ||
-        tiles[i].targetColor !== undefined
-      ) {
+      if (tiles[i].isCore || tiles[i].locked || tiles[i].targetColor !== undefined) {
         continue;
       }
       if (bitCount(solution[i]) >= 2) preferFrozen.push(i);
