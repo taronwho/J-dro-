@@ -246,6 +246,41 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     },
     check: (p) => p.completed.includes(100),
   },
+  {
+    id: 'target-first',
+    reward: 1,
+    name: { cs: 'Přesná muška', en: 'Sharpshooter', de: 'Scharfschütze' },
+    desc: {
+      cs: 'Dokonči level s barevnými cíli.',
+      en: 'Complete a level with colored targets.',
+      de: 'Schließe ein Level mit farbigen Zielen ab.',
+    },
+    check: (p, levels) =>
+      p.completed.some((id) => (levels[id - 1]?.targetCount ?? 0) > 0),
+  },
+  {
+    id: 'melt-first',
+    reward: 1,
+    name: { cs: 'Ledolamka', en: 'Icebreaker', de: 'Eisbrecher' },
+    desc: {
+      cs: 'Dokonči level se zamrzlou dlaždicí.',
+      en: 'Complete a level with a frozen tile.',
+      de: 'Schließe ein Level mit gefrorener Kachel ab.',
+    },
+    check: (p, levels) =>
+      p.completed.some((id) => (levels[id - 1]?.frozenCount ?? 0) > 0),
+  },
+  {
+    id: 'sector6',
+    reward: 3,
+    name: { cs: 'Za hranici', en: 'Beyond the grid', de: 'Jenseits des Netzes' },
+    desc: {
+      cs: 'Dokonči level 120.',
+      en: 'Complete level 120.',
+      de: 'Schließe Level 120 ab.',
+    },
+    check: (p) => p.completed.includes(120),
+  },
 ];
 
 export function newlyUnlocked(

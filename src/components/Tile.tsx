@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { bitCount, rotateCcw } from '../engine/generator';
 import type { Tile } from '../engine/types';
 import { useI18n } from '../i18n/i18n';
+import { Icon } from './Icon';
 
 interface TileProps {
   tile: Tile;
   rotation: number; // kumulativní počet otočení o 90° od načtení levelu
   powered: boolean;
   colorIdx: number;
+  colorsMask: number; // bitmaska všech barev, které dlaždicí protékají
   dist: number;
   won: boolean;
   igniteGen: number; // změna generace restartuje animaci rozlití světla
@@ -39,6 +41,7 @@ export function TileView({
   rotation,
   powered,
   colorIdx,
+  colorsMask,
   dist,
   won,
   igniteGen,
@@ -51,8 +54,18 @@ export function TileView({
   const { t } = useI18n();
   const [shaking, setShaking] = useState(false);
 
+  if (tile.isWall === true) {
+    return (
+      <div className="tile wall" aria-hidden="true">
+        <Icon name="wall" className="wall-icon" />
+      </div>
+    );
+  }
+
+  const frozen = tile.frozen === true;
+
   const handleClick = (): void => {
-    if (tile.locked && !hintMode) {
+    if ((tile.locked || frozen) && !hintMode) {
       setShaking(true);
       return;
     }
@@ -70,10 +83,22 @@ export function TileView({
   const entryBase =
     igniteEntry >= 0 ? (((igniteEntry - rotation) % 4) + 4) % 4 : -1;
 
+  // další barvy protékající dlaždicí (kromě primární)
+  const extraColors: number[] = [];
+  if (powered) {
+    for (let c = 0; c < 3; c++) {
+      if (c !== colorIdx && (colorsMask & (1 << c)) !== 0) extraColors.push(c);
+    }
+  }
+
+  const targetSatisfied =
+    tile.targetColor !== undefined && (colorsMask & (1 << tile.targetColor)) !== 0;
+
   const classes = ['tile'];
   if (powered) classes.push('powered', `p${colorIdx}`);
   if (tile.locked) classes.push('locked');
   if (tile.isCore) classes.push('core');
+  if (frozen) classes.push('frozen');
   if (shaking) classes.push('shaking');
   if (won && powered) classes.push('win');
   if (fog && !powered) classes.push('fogged');
@@ -85,7 +110,7 @@ export function TileView({
       onClick={handleClick}
       onAnimationEnd={() => setShaking(false)}
       style={won && powered ? { animationDelay: `${dist * 40}ms` } : undefined}
-      aria-label={tile.isCore ? t('ariaCore') : tile.locked ? t('ariaLocked') : t('ariaTile')}
+      aria-label={tile.isCore ? t('ariaCore') : tile.locked || frozen ? t('ariaLocked') : t('ariaTile')}
     >
       <svg
         className="pipes"
@@ -120,6 +145,23 @@ export function TileView({
               />
             );
           })}
+
+          {/* další barvy proudící stejnou trubkou — tenčí souběžné linky */}
+          {extraColors.map((c, order) =>
+            EDGE.map(([x, y], d) =>
+              base & (1 << d) ? (
+                <line
+                  key={`x${c}-${d}`}
+                  className={`energy-extra e${c}`}
+                  strokeWidth={order === 0 ? 3.2 : 1.8}
+                  x1={50}
+                  y1={50}
+                  x2={x}
+                  y2={y}
+                />
+              ) : null,
+            ),
+          )}
 
           {/* tekoucí částice energie v napájených trubkách */}
           {powered &&
@@ -164,7 +206,25 @@ export function TileView({
             </>
           )}
         </g>
+
+        {/* barevný cíl: zásuvka, která musí dostat svou barvu */}
+        {tile.targetColor !== undefined && (
+          <circle
+            className={
+              targetSatisfied
+                ? `target-ring t${tile.targetColor} sat`
+                : `target-ring t${tile.targetColor}`
+            }
+            cx={50}
+            cy={50}
+            r={17}
+          />
+        )}
       </svg>
+
+      {frozen && tile.frozenColor !== undefined && (
+        <Icon name="snowflake" className={`frozen-icon fz${tile.frozenColor}`} />
+      )}
 
       {tile.locked && !tile.isCore && (
         <>

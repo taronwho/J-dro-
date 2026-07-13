@@ -145,6 +145,24 @@ const STRINGS = {
     en: 'You only see powered tiles — the rest of the board is dark. You rotate blind and reveal the network from the core outwards. Remember what you already tried!',
     de: 'Du siehst nur versorgte Kacheln — der Rest liegt im Dunkeln. Du drehst blind und deckst das Netz vom Kern aus auf. Merk dir, was du schon probiert hast!',
   },
+  helpTargets: { cs: 'Barevné cíle', en: 'Colored targets', de: 'Farbige Ziele' },
+  helpTargetsText: {
+    cs: 'Od Sektoru 6 napájí každé jádro vlastní síť. Koncovka s barevným kroužkem musí dostat energii jádra stejné barvy — kroužek se pak rozsvítí. Jednou trubkou může proudit i víc barev najednou; uvidíš je jako souběžné linky.',
+    en: 'From Sector 6 on, each core powers its own network. An endpoint with a colored ring must receive energy from the core of the same color — the ring then lights up. A single pipe can carry several colors at once; you will see them as parallel lines.',
+    de: 'Ab Sektor 6 speist jeder Kern sein eigenes Netz. Ein Endstück mit farbigem Ring muss Energie vom gleichfarbigen Kern erhalten — der Ring leuchtet dann auf. Ein Rohr kann mehrere Farben gleichzeitig führen; du siehst sie als parallele Linien.',
+  },
+  helpWalls: { cs: 'Zdi', en: 'Walls', de: 'Wände' },
+  helpWallsText: {
+    cs: 'Přes zeď síť nevede — musíš ji obejít. Zdi nejde otáčet a nepočítají se do výhry.',
+    en: 'The network cannot pass through a wall — you have to go around it. Walls cannot be rotated and do not count toward the win.',
+    de: 'Durch eine Wand führt kein Netz — du musst sie umgehen. Wände lassen sich nicht drehen und zählen nicht zum Sieg.',
+  },
+  helpFrozen: { cs: 'Zamrzlé dlaždice', en: 'Frozen tiles', de: 'Gefrorene Kacheln' },
+  helpFrozenText: {
+    cs: 'Zamrzlou dlaždicí nejde otáčet. Roztaje, když na ni namíříš napájenou trubku s barvou z její vločky. Pak s ní otáčíš normálně.',
+    en: 'A frozen tile cannot be rotated. It melts when you point a powered pipe carrying the color on its snowflake at it. Then it rotates normally.',
+    de: 'Eine gefrorene Kachel lässt sich nicht drehen. Sie taut, wenn du ein versorgtes Rohr mit der Farbe ihrer Schneeflocke auf sie richtest. Danach dreht sie sich normal.',
+  },
   helpRushText: {
     cs: 'Vyřeš co nejvíc polí, než vyprší čas. Start: 90 sekund, každé vyřešené pole přidá 20 sekund. Pole se postupně zvětšují.',
     en: 'Solve as many grids as you can before time runs out. Start: 90 seconds, each solved grid adds 20 seconds. Grids grow over time.',

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { computeFlow } from '../engine/solver';
+import { computeColors, computeFlow } from '../engine/solver';
 import type { GameState } from '../engine/types';
 import { useI18n } from '../i18n/i18n';
 import type { Ignite, LastWin, RushOver } from './App';
@@ -46,6 +46,10 @@ export function Board({
     () => computeFlow(game.tiles, game.config),
     [game.tiles, game.config],
   );
+  const colors = useMemo(
+    () => computeColors(game.tiles, game.config),
+    [game.tiles, game.config],
+  );
   const { width, height } = game.config;
 
   return (
@@ -67,6 +71,7 @@ export function Board({
             rotation={rotations[i]}
             powered={flow.powered[i]}
             colorIdx={flow.colors[i]}
+            colorsMask={colors[i]}
             dist={flow.dists[i]}
             won={game.won}
             igniteGen={ignite.gen}

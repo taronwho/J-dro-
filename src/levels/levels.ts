@@ -8,6 +8,10 @@ interface Tier {
   coreCount: 1 | 2 | 3;
   lockedCount: number;
   movesMargin?: number;
+  forest?: boolean;
+  wallCount?: number;
+  targetCount?: number;
+  frozenCount?: number;
 }
 
 // Progrese 100 levelů. Levely 1–32 zůstávají shodné s původní verzí
@@ -31,9 +35,15 @@ const TIERS: Tier[] = [
   { from: 77, to: 84, size: 7, wrap: true, coreCount: 3, lockedCount: 5, movesMargin: 8 },
   { from: 85, to: 92, size: 7, wrap: true, coreCount: 3, lockedCount: 6, movesMargin: 6 },
   { from: 93, to: 100, size: 7, wrap: true, coreCount: 3, lockedCount: 6, movesMargin: 4 },
+  // Sektor 6: oddělené barevné sítě (les), zdi, barevné cíle, zamrzlé dlaždice
+  { from: 101, to: 104, size: 6, wrap: false, coreCount: 2, lockedCount: 0, forest: true, wallCount: 3, targetCount: 2 },
+  { from: 105, to: 108, size: 6, wrap: false, coreCount: 2, lockedCount: 0, forest: true, wallCount: 4, targetCount: 2, frozenCount: 1 },
+  { from: 109, to: 112, size: 7, wrap: false, coreCount: 2, lockedCount: 2, forest: true, wallCount: 4, targetCount: 3, frozenCount: 1 },
+  { from: 113, to: 116, size: 7, wrap: false, coreCount: 3, lockedCount: 2, forest: true, wallCount: 5, targetCount: 3, frozenCount: 2 },
+  { from: 117, to: 120, size: 7, wrap: true, coreCount: 3, lockedCount: 2, forest: true, wallCount: 5, targetCount: 4, frozenCount: 3 },
 ];
 
-export const LEVEL_COUNT = 100;
+export const LEVEL_COUNT = 120;
 
 // Menu dělí levely do sektorů po 20
 export const CHAPTER_SIZE = 20;
@@ -52,5 +62,9 @@ export const LEVELS: LevelConfig[] = Array.from({ length: LEVEL_COUNT }, (_, k) 
     coreCount: tier.coreCount,
     lockedCount: tier.lockedCount,
     ...(tier.movesMargin !== undefined ? { movesMargin: tier.movesMargin } : {}),
+    ...(tier.forest === true ? { forest: true } : {}),
+    ...(tier.wallCount !== undefined ? { wallCount: tier.wallCount } : {}),
+    ...(tier.targetCount !== undefined ? { targetCount: tier.targetCount } : {}),
+    ...(tier.frozenCount !== undefined ? { frozenCount: tier.frozenCount } : {}),
   };
 });

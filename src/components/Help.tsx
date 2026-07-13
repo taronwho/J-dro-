@@ -15,7 +15,10 @@ export type HelpSection =
   | 'daily'
   | 'endless'
   | 'blackout'
-  | 'rush';
+  | 'rush'
+  | 'targets'
+  | 'walls'
+  | 'frozen';
 
 interface SectionDef {
   id: HelpSection;
@@ -31,6 +34,9 @@ const SECTIONS: SectionDef[] = [
   { id: 'target', icon: 'target', color: 'c-gold', title: 'helpTarget', text: 'helpTargetText' },
   { id: 'wrap', icon: 'torus', color: 'c-cyan', title: 'helpWrap', text: 'helpWrapText' },
   { id: 'lock', icon: 'lock', color: 'c-dim', title: 'helpLock', text: 'helpLockText' },
+  { id: 'targets', icon: 'target', color: 'c-magenta', title: 'helpTargets', text: 'helpTargetsText' },
+  { id: 'walls', icon: 'wall', color: 'c-dim', title: 'helpWalls', text: 'helpWallsText' },
+  { id: 'frozen', icon: 'snowflake', color: 'c-cyan', title: 'helpFrozen', text: 'helpFrozenText' },
   { id: 'limit', icon: 'hourglass', color: 'c-amber', title: 'helpLimit', text: 'helpLimitText' },
   { id: 'hints', icon: 'bulb', color: 'c-amber', title: 'helpHints', text: 'helpHintsText' },
   { id: 'streak', icon: 'flame', color: 'c-flame', title: 'helpStreak', text: 'helpStreakText' },

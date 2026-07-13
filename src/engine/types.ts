@@ -6,6 +6,10 @@ export interface Tile {
   locked: boolean;
   isCore: boolean;
   coreColor?: number; // index barvy 0–2, jen pro jádra a vizuál
+  isWall?: boolean; // zeď: bez konektorů, nepočítá se do výhry
+  targetColor?: number; // koncovka musí dostat energii této barvy
+  frozenColor?: number; // barva, která dlaždici rozmrazí
+  frozen?: boolean; // aktuálně zamrzlá (nelze otáčet)
 }
 
 export interface LevelConfig {
@@ -17,6 +21,10 @@ export interface LevelConfig {
   coreCount: 1 | 2 | 3;
   lockedCount: number;
   movesMargin?: number; // limit tahů = par + margin; undefined = bez limitu
+  forest?: boolean; // každé jádro napájí vlastní strom (oddělené barevné sítě)
+  wallCount?: number; // počet zdí
+  targetCount?: number; // počet barevných cílů (koncovek)
+  frozenCount?: number; // počet zamrzlých dlaždic (max 1 na barevnou síť)
 }
 
 export interface GameState {

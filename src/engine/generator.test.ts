@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { LEVELS } from '../levels/levels';
-import { generateLevel, rotateCw } from './generator';
-import { isWon, neighborIndex } from './solver';
+import { bitCount, generateLevel, rotateCw } from './generator';
+import { applyMelt, computeColors, isWon, neighborIndex } from './solver';
 import type { Dir, GameState } from './types';
 
 function solvedCopy(state: GameState): GameState {
@@ -86,6 +86,49 @@ describe('generátor levelů', () => {
           expect(state.moveLimit).toBe(state.par + config.movesMargin);
           expect(state.moveLimit).toBeGreaterThan(state.par);
         }
+      });
+
+      it('zdi: správný počet, bez konektorů, zamčené', () => {
+        const state = generateLevel(config);
+        const wallTiles = state.tiles.filter((t) => t.isWall === true);
+        expect(wallTiles.length).toBe(config.wallCount ?? 0);
+        for (const wall of wallTiles) {
+          expect(wall.mask).toBe(0);
+          expect(wall.solutionMask).toBe(0);
+          expect(wall.locked).toBe(true);
+        }
+      });
+
+      it('barevné cíle: správný počet, koncovky, splněné v řešení', () => {
+        const state = generateLevel(config);
+        const targets = state.tiles
+          .map((t, i) => ({ t, i }))
+          .filter(({ t }) => t.targetColor !== undefined);
+        expect(targets.length).toBe(config.targetCount ?? 0);
+        const solved = solvedCopy(state);
+        const colors = computeColors(solved.tiles, config);
+        for (const { t, i } of targets) {
+          expect(bitCount(t.solutionMask)).toBe(1);
+          expect(colors[i] & (1 << (t.targetColor ?? 0))).not.toBe(0);
+        }
+      });
+
+      it('zamrzlé dlaždice: rozmrazitelné bez vlastního otočení', () => {
+        const state = generateLevel(config);
+        const frozen = state.tiles.filter((t) => t.frozen === true);
+        expect(frozen.length).toBeLessThanOrEqual(config.frozenCount ?? 0);
+        if ((config.frozenCount ?? 0) === 0) return;
+        expect(frozen.length).toBeGreaterThan(0);
+        // Nastav vše kromě zamrzlých na řešení — každý led musí roztát
+        const tiles = state.tiles.map((t) =>
+          t.frozen === true ? t : { ...t, mask: t.solutionMask },
+        );
+        const melted = applyMelt(tiles, config);
+        expect(melted).not.toBeNull();
+        expect(melted?.some((t) => t.frozen === true)).toBe(false);
+        // a po dotočení rozmrzlých je level vyhraný
+        const finished = (melted ?? tiles).map((t) => ({ ...t, mask: t.solutionMask }));
+        expect(isWon({ ...state, tiles: finished })).toBe(true);
       });
     });
   }

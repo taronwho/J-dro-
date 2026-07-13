@@ -18,7 +18,9 @@ export type IconName =
   | 'moon'
   | 'timer'
   | 'sound'
-  | 'soundOff';
+  | 'soundOff'
+  | 'snowflake'
+  | 'wall';
 
 // Vlastní ikonografie hry: tahové SVG ikony 24×24 ve stylu trubek —
 // tenké linky, kulatá zakončení, tečky jako energetické uzly.
@@ -129,6 +131,20 @@ const PATHS: Record<IconName, ReactElement> = {
     <>
       <path d="M4 9.5v5h3.2L12 18.5v-13L7.2 9.5H4z" />
       <path d="M15.5 9.5l5 5M20.5 9.5l-5 5" />
+    </>
+  ),
+  snowflake: (
+    <>
+      <path d="M12 2.8v18.4M4 7.4l16 9.2M20 7.4L4 16.6" />
+      <path d="M9.6 4.6L12 7l2.4-2.4M9.6 19.4L12 17l2.4 2.4" />
+      <circle className="fill" cx="12" cy="12" r="1.4" />
+    </>
+  ),
+  wall: (
+    <>
+      <rect x="3" y="4.5" width="18" height="15" rx="1.5" />
+      <path d="M3 9.5h18M3 14.5h18" />
+      <path d="M9 4.5v5M15 9.5v5M9 14.5v5" />
     </>
   ),
 };

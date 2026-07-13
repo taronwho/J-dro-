@@ -99,4 +99,9 @@ export const sfx = {
     tone({ freq: 660, duration: 0.22, type: 'triangle', volume: 0.1 });
     tone({ freq: 990, duration: 0.3, type: 'triangle', volume: 0.1, delay: 0.13 });
   },
+  // tání ledu — křišťálový sestup
+  melt(): void {
+    tone({ freq: 1320, freqEnd: 660, duration: 0.2, type: 'sine', volume: 0.09 });
+    tone({ freq: 990, freqEnd: 500, duration: 0.24, type: 'sine', volume: 0.06, delay: 0.08 });
+  },
 };

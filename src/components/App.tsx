@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { generateLevel, rotateCw } from '../engine/generator';
-import { computeFlow } from '../engine/solver';
-import type { GameState, LevelConfig } from '../engine/types';
+import { applyMelt, checkWin, computeFlow } from '../engine/solver';
+import type { GameState, LevelConfig, Tile } from '../engine/types';
 import { detectLang, I18nContext, makeT, persistLang, type Lang } from '../i18n/i18n';
 import { LEVELS, LEVEL_COUNT } from '../levels/levels';
 import { newlyUnlocked, type AchievementDef } from '../meta/achievements';
@@ -302,7 +302,10 @@ export function App() {
   const startConfig = (config: LevelConfig, nextMode: Mode): void => {
     clearWaveTimer();
     window.scrollTo(0, 0);
-    const state = generateLevel(config);
+    let state = generateLevel(config);
+    // led sousedící s energií své barvy může roztát hned na startu
+    const melted = applyMelt(state.tiles, state.config);
+    if (melted !== null) state = { ...state, tiles: melted };
     const flow = computeFlow(state.tiles, state.config);
     setMode(nextMode);
     setGame(state);
@@ -477,12 +480,28 @@ export function App() {
   };
 
   const applyBoardResult = (
-    next: GameState,
+    tilesNext: Tile[],
+    movesNext: number,
     prevPowered: boolean[],
     usedHint: boolean,
     baseProgress: Progress,
   ): void => {
-    const flow = computeFlow(next.tiles, next.config);
+    if (game === null) return;
+    let tiles = tilesNext;
+    const melted = applyMelt(tiles, game.config);
+    if (melted !== null) {
+      tiles = melted;
+      sfx.melt();
+    }
+    const flow = computeFlow(tiles, game.config);
+    const won = checkWin(tiles, game.config);
+    const next: GameState = {
+      ...game,
+      tiles,
+      moves: movesNext,
+      powered: flow.powered,
+      won,
+    };
     setGame(next);
 
     // nově napájené dlaždice: světlo do nich vteče kaskádou od místa připojení
@@ -533,7 +552,7 @@ export function App() {
     if (!game || game.won || failed || rushOver !== null) return;
     const tile = game.tiles[index];
     setHintMode(false);
-    if (tile.locked) return;
+    if (tile.locked || tile.frozen === true) return;
 
     const alreadyCorrect = tile.mask === tile.solutionMask;
     if (!alreadyCorrect && progress.hints < 1) return;
@@ -541,9 +560,6 @@ export function App() {
 
     const tiles = game.tiles.slice();
     tiles[index] = { ...tile, mask: tile.solutionMask, locked: true };
-    const flow = computeFlow(tiles, game.config);
-    const won = flow.powered.every(Boolean);
-    const next: GameState = { ...game, tiles, powered: flow.powered, won };
 
     let baseProgress = progress;
     if (!alreadyCorrect) {
@@ -552,7 +568,13 @@ export function App() {
       setProgress(baseProgress);
       saveProgress(baseProgress);
     }
-    applyBoardResult(next, game.powered, hintUsed || !alreadyCorrect, baseProgress);
+    applyBoardResult(
+      tiles,
+      game.moves,
+      game.powered,
+      hintUsed || !alreadyCorrect,
+      baseProgress,
+    );
   };
 
   const handleTileClick = (index: number): void => {
@@ -562,26 +584,17 @@ export function App() {
       return;
     }
     const tile = game.tiles[index];
-    if (tile.locked) return;
+    if (tile.locked || tile.frozen === true) return;
     sfx.rotate();
 
     const tiles = game.tiles.slice();
     tiles[index] = { ...tile, mask: rotateCw(tile.mask) };
-    const flow = computeFlow(tiles, game.config);
-    const won = flow.powered.every(Boolean);
-    const next: GameState = {
-      ...game,
-      tiles,
-      moves: game.moves + 1,
-      powered: flow.powered,
-      won,
-    };
     setRotations((prev) => {
       const copy = prev.slice();
       copy[index] += 1;
       return copy;
     });
-    applyBoardResult(next, game.powered, hintUsed, progress);
+    applyBoardResult(tiles, game.moves + 1, game.powered, hintUsed, progress);
   };
 
   const openHelp = (section: HelpSection | null): void => {
