@@ -8,6 +8,8 @@ export interface AchievementProgress {
   bestStreak: number;
   daily: { last: string; streak: number; total: number };
   endless: { total: number };
+  blackout: { total: number };
+  rush: { best: number };
 }
 
 export interface AchievementDef {
@@ -199,6 +201,39 @@ export const ACHIEVEMENTS: AchievementDef[] = [
       de: 'Schließe 10 Endlos-Level ab.',
     },
     check: (p) => p.endless.total >= 10,
+  },
+  {
+    id: 'blackout-5',
+    reward: 2,
+    name: { cs: 'Vidím ve tmě', en: 'Night vision', de: 'Nachtsicht' },
+    desc: {
+      cs: 'Dokonči 5 levelů v režimu Zatmění.',
+      en: 'Complete 5 Blackout levels.',
+      de: 'Schließe 5 Blackout-Level ab.',
+    },
+    check: (p) => p.blackout.total >= 5,
+  },
+  {
+    id: 'rush-5',
+    reward: 2,
+    name: { cs: 'Sprinter', en: 'Sprinter', de: 'Sprinter' },
+    desc: {
+      cs: 'Vyřeš 5 polí v jedné Bleskové hře.',
+      en: 'Solve 5 grids in one Time rush.',
+      de: 'Löse 5 Felder in einem Zeit-Rausch.',
+    },
+    check: (p) => p.rush.best >= 5,
+  },
+  {
+    id: 'rush-10',
+    reward: 3,
+    name: { cs: 'Rychlost světla', en: 'Light speed', de: 'Lichtgeschwindigkeit' },
+    desc: {
+      cs: 'Vyřeš 10 polí v jedné Bleskové hře.',
+      en: 'Solve 10 grids in one Time rush.',
+      de: 'Löse 10 Felder in einem Zeit-Rausch.',
+    },
+    check: (p) => p.rush.best >= 10,
   },
   {
     id: 'master',

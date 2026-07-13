@@ -5,6 +5,7 @@ import type { GameState, LevelConfig } from '../engine/types';
 import { detectLang, I18nContext, makeT, persistLang, type Lang } from '../i18n/i18n';
 import { LEVELS, LEVEL_COUNT } from '../levels/levels';
 import { newlyUnlocked, type AchievementDef } from '../meta/achievements';
+import { isSoundEnabled, setSoundEnabled, sfx } from '../sound';
 import { Board } from './Board';
 import { Help, type HelpSection } from './Help';
 import { HUD } from './HUD';
@@ -15,7 +16,24 @@ type Screen = 'menu' | 'game' | 'victory';
 export type Mode =
   | { kind: 'level'; id: number }
   | { kind: 'daily' }
-  | { kind: 'endless' };
+  | { kind: 'endless' }
+  | { kind: 'blackout' }
+  | { kind: 'rush' };
+
+export interface RushState {
+  score: number;
+  timeLeft: number; // sekundy
+}
+
+export interface RushOver {
+  score: number;
+  best: number;
+  newBest: boolean;
+  achievements: AchievementDef[];
+}
+
+const RUSH_START_SECONDS = 90;
+const RUSH_BONUS_SECONDS = 20;
 
 export interface BestEntry {
   moves: number;
@@ -33,6 +51,8 @@ export interface Progress {
   bestStreak: number;
   daily: { last: string; streak: number; total: number };
   endless: { total: number };
+  blackout: { total: number };
+  rush: { best: number };
 }
 
 // Kaskáda rozsvícení: delays[i] v ms (-1 = bez animace), entries[i] = strana vstupu světla
@@ -65,6 +85,8 @@ const EMPTY_PROGRESS: Progress = {
   bestStreak: 0,
   daily: { last: '', streak: 0, total: 0 },
   endless: { total: 0 },
+  blackout: { total: 0 },
+  rush: { best: 0 },
 };
 
 // Fallback do paměti, když localStorage není dostupný
@@ -114,6 +136,14 @@ function loadProgress(): Progress {
             endless && typeof endless.total === 'number'
               ? { total: endless.total }
               : { total: 0 },
+          blackout:
+            parsed.blackout && typeof parsed.blackout.total === 'number'
+              ? { total: parsed.blackout.total }
+              : { total: 0 },
+          rush:
+            parsed.rush && typeof parsed.rush.best === 'number'
+              ? { best: parsed.rush.best }
+              : { best: 0 },
         };
       }
     }
@@ -158,9 +188,13 @@ function dailyConfig(date: Date): LevelConfig {
   };
 }
 
+// Náhodné seedy smí vznikat jen tady v UI vrstvě — engine je pro daný seed deterministický
+function randomSeed(): number {
+  return (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
+}
+
 function endlessConfig(): LevelConfig {
-  // Náhodný seed smí vzniknout jen tady v UI vrstvě — engine je pro daný seed deterministický
-  const seed = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
+  const seed = randomSeed();
   const size = 5 + (seed % 3); // 5–7
   return {
     id: 0,
@@ -170,6 +204,34 @@ function endlessConfig(): LevelConfig {
     wrap: (seed & 4) !== 0,
     coreCount: ([1, 2, 3] as const)[seed % 3],
     lockedCount: seed % 4,
+  };
+}
+
+function blackoutConfig(): LevelConfig {
+  const seed = randomSeed();
+  const size = 5 + (seed % 2); // 5–6, po paměti je to tak akorát
+  return {
+    id: 0,
+    seed,
+    width: size,
+    height: size,
+    wrap: (seed & 2) !== 0,
+    coreCount: 1,
+    lockedCount: 0,
+  };
+}
+
+function rushConfig(solved: number): LevelConfig {
+  const seed = randomSeed();
+  const size = 4 + Math.min(3, Math.floor(solved / 4)); // 4×4 → 7×7
+  return {
+    id: 0,
+    seed,
+    width: size,
+    height: size,
+    wrap: solved >= 6 && (seed & 1) !== 0,
+    coreCount: 1,
+    lockedCount: 0,
   };
 }
 
@@ -186,6 +248,9 @@ export function App() {
   const [failed, setFailed] = useState(false);
   const [helpSection, setHelpSection] = useState<HelpSection | null>(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [soundOn, setSoundOn] = useState<boolean>(isSoundEnabled);
+  const [rush, setRush] = useState<RushState>({ score: 0, timeLeft: RUSH_START_SECONDS });
+  const [rushOver, setRushOver] = useState<RushOver | null>(null);
   const [lang, setLangState] = useState<Lang>(detectLang);
   const waveTimer = useRef<number | null>(null);
 
@@ -236,6 +301,7 @@ export function App() {
 
   const startConfig = (config: LevelConfig, nextMode: Mode): void => {
     clearWaveTimer();
+    window.scrollTo(0, 0);
     const state = generateLevel(config);
     const flow = computeFlow(state.tiles, state.config);
     setMode(nextMode);
@@ -258,6 +324,12 @@ export function App() {
     startConfig(LEVELS[id - 1], { kind: 'level', id });
   const startDaily = (): void => startConfig(dailyConfig(new Date()), { kind: 'daily' });
   const startEndless = (): void => startConfig(endlessConfig(), { kind: 'endless' });
+  const startBlackout = (): void => startConfig(blackoutConfig(), { kind: 'blackout' });
+  const startRush = (): void => {
+    setRush({ score: 0, timeLeft: RUSH_START_SECONDS });
+    setRushOver(null);
+    startConfig(rushConfig(0), { kind: 'rush' });
+  };
   const restart = (): void => {
     if (game !== null) startConfig(game.config, mode);
   };
@@ -265,8 +337,63 @@ export function App() {
   const goMenu = (): void => {
     clearWaveTimer();
     setGame(null);
+    setRushOver(null);
     setScreen('menu');
   };
+
+  const toggleSound = (): void => {
+    const next = !soundOn;
+    setSoundOn(next);
+    setSoundEnabled(next);
+  };
+
+  const endRush = (finalScore: number): void => {
+    clearWaveTimer();
+    const newBest = finalScore > progress.rush.best;
+    let updated: Progress = {
+      ...progress,
+      rush: { best: Math.max(progress.rush.best, finalScore) },
+    };
+    const unlockedAchievements = newlyUnlocked(updated, updated.achievements, LEVELS);
+    if (unlockedAchievements.length > 0) {
+      updated = {
+        ...updated,
+        achievements: [
+          ...updated.achievements,
+          ...unlockedAchievements.map((a) => a.id),
+        ],
+        hints: updated.hints + unlockedAchievements.reduce((s, a) => s + a.reward, 0),
+      };
+    }
+    setProgress(updated);
+    saveProgress(updated);
+    setRushOver({
+      score: finalScore,
+      best: updated.rush.best,
+      newBest,
+      achievements: unlockedAchievements,
+    });
+    sfx.fail();
+  };
+
+  // Odpočet Bleskové hry
+  useEffect(() => {
+    if (mode.kind !== 'rush' || game === null || rushOver !== null || screen === 'menu') {
+      return;
+    }
+    const interval = window.setInterval(() => {
+      setRush((prev) => ({ ...prev, timeLeft: Math.max(0, prev.timeLeft - 0.25) }));
+    }, 250);
+    return () => window.clearInterval(interval);
+  }, [mode.kind, game, rushOver, screen]);
+
+  useEffect(() => {
+    if (mode.kind === 'rush' && rush.timeLeft <= 0 && rushOver === null && game !== null) {
+      endRush(rush.score);
+    }
+    // endRush je stabilní v rámci renderu; závislosti pokrývají spouštěcí stav
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rush.timeLeft, mode.kind, rushOver, game]);
 
   const handleWin = (next: GameState, usedHint: boolean, base: Progress): void => {
     const rawStars = starsFor(next.moves, next.par);
@@ -317,6 +444,8 @@ export function App() {
           total: base.daily.total + (already ? 0 : 1),
         },
       };
+    } else if (mode.kind === 'blackout') {
+      updated = { ...base, blackout: { total: base.blackout.total + 1 } };
     } else {
       updated = { ...base, endless: { total: base.endless.total + 1 } };
     }
@@ -331,6 +460,7 @@ export function App() {
         ],
         hints: updated.hints + unlockedAchievements.reduce((s, a) => s + a.reward, 0),
       };
+      window.setTimeout(() => sfx.achievement(), 800);
     }
 
     setProgress(updated);
@@ -369,25 +499,45 @@ export function App() {
     }));
 
     if (next.won) {
-      handleWin(next, usedHint, baseProgress);
+      sfx.win();
       const maxDist = flow.dists.reduce((m, d) => Math.max(m, d), 0);
       clearWaveTimer();
-      waveTimer.current = window.setTimeout(() => {
-        setScreen('victory');
-      }, maxDist * 40 + 600);
-    } else if (next.moveLimit !== null && next.moves >= next.moveLimit) {
-      setFailed(true);
+      if (mode.kind === 'rush') {
+        // Blesková hra: bonusový čas a rovnou další pole, bez overlaye
+        const newScore = rush.score + 1;
+        setRush((prev) => ({
+          score: newScore,
+          timeLeft: prev.timeLeft + RUSH_BONUS_SECONDS,
+        }));
+        waveTimer.current = window.setTimeout(() => {
+          startConfig(rushConfig(newScore), { kind: 'rush' });
+        }, maxDist * 40 + 500);
+      } else {
+        handleWin(next, usedHint, baseProgress);
+        waveTimer.current = window.setTimeout(() => {
+          setScreen('victory');
+        }, maxDist * 40 + 600);
+      }
+    } else {
+      if (anyFresh) {
+        sfx.connect(fresh.filter(Boolean).length);
+      }
+      if (next.moveLimit !== null && next.moves >= next.moveLimit) {
+        setFailed(true);
+        sfx.fail();
+      }
     }
   };
 
   const applyHint = (index: number): void => {
-    if (!game || game.won || failed) return;
+    if (!game || game.won || failed || rushOver !== null) return;
     const tile = game.tiles[index];
     setHintMode(false);
     if (tile.locked) return;
 
     const alreadyCorrect = tile.mask === tile.solutionMask;
     if (!alreadyCorrect && progress.hints < 1) return;
+    sfx.hint();
 
     const tiles = game.tiles.slice();
     tiles[index] = { ...tile, mask: tile.solutionMask, locked: true };
@@ -406,13 +556,14 @@ export function App() {
   };
 
   const handleTileClick = (index: number): void => {
-    if (!game || game.won || failed) return;
+    if (!game || game.won || failed || rushOver !== null) return;
     if (hintMode) {
       applyHint(index);
       return;
     }
     const tile = game.tiles[index];
     if (tile.locked) return;
+    sfx.rotate();
 
     const tiles = game.tiles.slice();
     tiles[index] = { ...tile, mask: rotateCw(tile.mask) };
@@ -446,7 +597,11 @@ export function App() {
         onSelect={startLevel}
         onDaily={startDaily}
         onEndless={startEndless}
+        onBlackout={startBlackout}
+        onRush={startRush}
         onHelp={openHelp}
+        soundOn={soundOn}
+        onSoundToggle={toggleSound}
       />
     );
   } else {
@@ -455,7 +610,11 @@ export function App() {
         ? i18n.t('level', { n: mode.id })
         : mode.kind === 'daily'
           ? i18n.t('dailyTitle')
-          : i18n.t('endlessTitle');
+          : mode.kind === 'blackout'
+            ? i18n.t('blackoutTitle')
+            : mode.kind === 'rush'
+              ? i18n.t('rushTitle')
+              : i18n.t('endlessTitle');
     const onNext =
       mode.kind === 'level'
         ? mode.id < LEVEL_COUNT
@@ -463,7 +622,9 @@ export function App() {
           : null
         : mode.kind === 'endless'
           ? () => startEndless()
-          : null;
+          : mode.kind === 'blackout'
+            ? () => startBlackout()
+            : null;
     content = (
       <div className="game-screen">
         <HUD
@@ -473,9 +634,12 @@ export function App() {
           moveLimit={game.moveLimit}
           hints={progress.hints}
           hintMode={hintMode}
+          rush={mode.kind === 'rush' ? rush : null}
+          soundOn={soundOn}
+          onSoundToggle={toggleSound}
           onHintToggle={() => setHintMode((h) => !h)}
           onHelp={() => openHelp('goal')}
-          onReset={restart}
+          onReset={mode.kind === 'rush' ? startRush : restart}
           onMenu={goMenu}
         />
         <Board
@@ -485,11 +649,14 @@ export function App() {
           hintMode={hintMode}
           hints={progress.hints}
           failed={failed}
+          fog={mode.kind === 'blackout'}
+          rushOver={rushOver}
           showOverlay={screen === 'victory'}
           lastWin={lastWin}
           onTileClick={handleTileClick}
           onNext={onNext}
           onRetry={restart}
+          onRushRetry={startRush}
           onMenu={goMenu}
         />
       </div>

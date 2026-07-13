@@ -11,7 +11,11 @@ interface MenuProps {
   onSelect: (id: number) => void;
   onDaily: () => void;
   onEndless: () => void;
+  onBlackout: () => void;
+  onRush: () => void;
   onHelp: (section: HelpSection | null) => void;
+  soundOn: boolean;
+  onSoundToggle: () => void;
 }
 
 function Stars({ count }: { count: number }) {
@@ -33,7 +37,17 @@ function isoToday(): string {
   return `${d.getFullYear()}-${m}-${day}`;
 }
 
-export function Menu({ progress, onSelect, onDaily, onEndless, onHelp }: MenuProps) {
+export function Menu({
+  progress,
+  onSelect,
+  onDaily,
+  onEndless,
+  onBlackout,
+  onRush,
+  onHelp,
+  soundOn,
+  onSoundToggle,
+}: MenuProps) {
   const { lang, setLang, t } = useI18n();
   const [showAchievements, setShowAchievements] = useState(false);
   const stars = totalStars(progress);
@@ -53,6 +67,14 @@ export function Menu({ progress, onSelect, onDaily, onEndless, onHelp }: MenuPro
             {code.toUpperCase()}
           </button>
         ))}
+        <button
+          type="button"
+          className="lang-btn help-open"
+          onClick={onSoundToggle}
+          aria-label={t('soundLabel')}
+        >
+          <Icon name={soundOn ? 'sound' : 'soundOff'} />
+        </button>
         <button
           type="button"
           className="lang-btn help-open"
@@ -134,6 +156,29 @@ export function Menu({ progress, onSelect, onDaily, onEndless, onHelp }: MenuPro
             <strong>{t('endlessTitle')}</strong>
             <small>
               <Icon name="bolt" className="inline-icon c-cyan" /> {progress.endless.total}
+            </small>
+          </span>
+        </button>
+        <button type="button" className="mode-btn" onClick={onBlackout}>
+          <span className="mode-icon c-dim">
+            <Icon name="moon" />
+          </span>
+          <span className="mode-text">
+            <strong>{t('blackoutTitle')}</strong>
+            <small>
+              <Icon name="bolt" className="inline-icon c-cyan" />{' '}
+              {progress.blackout.total}
+            </small>
+          </span>
+        </button>
+        <button type="button" className="mode-btn" onClick={onRush}>
+          <span className="mode-icon c-flame">
+            <Icon name="timer" />
+          </span>
+          <span className="mode-text">
+            <strong>{t('rushTitle')}</strong>
+            <small>
+              <Icon name="trophy" className="inline-icon c-gold" /> {progress.rush.best}
             </small>
           </span>
         </button>

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { computeFlow } from '../engine/solver';
 import type { GameState } from '../engine/types';
 import { useI18n } from '../i18n/i18n';
-import type { Ignite, LastWin } from './App';
+import type { Ignite, LastWin, RushOver } from './App';
 import { Icon } from './Icon';
 import { TileView } from './Tile';
 
@@ -13,11 +13,14 @@ interface BoardProps {
   hintMode: boolean;
   hints: number;
   failed: boolean;
+  fog: boolean;
+  rushOver: RushOver | null;
   showOverlay: boolean;
   lastWin: LastWin | null;
   onTileClick: (index: number) => void;
   onNext: (() => void) | null;
   onRetry: () => void;
+  onRushRetry: () => void;
   onMenu: () => void;
 }
 
@@ -28,11 +31,14 @@ export function Board({
   hintMode,
   hints,
   failed,
+  fog,
+  rushOver,
   showOverlay,
   lastWin,
   onTileClick,
   onNext,
   onRetry,
+  onRushRetry,
   onMenu,
 }: BoardProps) {
   const { lang, t } = useI18n();
@@ -67,6 +73,7 @@ export function Board({
             igniteDelay={ignite.delays[i] ?? -1}
             igniteEntry={ignite.entries[i] ?? -1}
             hintMode={hintMode}
+            fog={fog}
             onClick={() => onTileClick(i)}
           />
         ))}
@@ -147,6 +154,42 @@ export function Board({
             </p>
             <div className="overlay-buttons">
               <button type="button" className="btn primary" onClick={onRetry}>
+                {t('retry')}
+              </button>
+              <button type="button" className="btn" onClick={onMenu}>
+                {t('menu')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rushOver !== null && (
+        <div className="overlay">
+          <div className="overlay-card fail">
+            <h2>{t('rushOver')}</h2>
+            <p className="overlay-moves">{t('rushSolved', { n: rushOver.score })}</p>
+            {rushOver.newBest ? (
+              <p className="overlay-record">{t('newRecord')}</p>
+            ) : (
+              <p className="overlay-best">{t('best', { n: rushOver.best })}</p>
+            )}
+            {rushOver.achievements.length > 0 && (
+              <div className="overlay-achievements">
+                <p className="overlay-bonus">
+                  <Icon name="trophy" className="inline-icon c-gold" />{' '}
+                  {t('newAchievement')}
+                </p>
+                {rushOver.achievements.map((a) => (
+                  <p key={a.id} className="overlay-ach-name">
+                    {a.name[lang]}
+                    {a.reward > 0 && ` (${t('rewardHint', { n: a.reward })})`}
+                  </p>
+                ))}
+              </div>
+            )}
+            <div className="overlay-buttons">
+              <button type="button" className="btn primary" onClick={onRushRetry}>
                 {t('retry')}
               </button>
               <button type="button" className="btn" onClick={onMenu}>

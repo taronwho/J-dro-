@@ -13,7 +13,9 @@ export type HelpSection =
   | 'streak'
   | 'achievements'
   | 'daily'
-  | 'endless';
+  | 'endless'
+  | 'blackout'
+  | 'rush';
 
 interface SectionDef {
   id: HelpSection;
@@ -35,6 +37,8 @@ const SECTIONS: SectionDef[] = [
   { id: 'achievements', icon: 'trophy', color: 'c-gold', title: 'achievements', text: 'helpAchText' },
   { id: 'daily', icon: 'calendar', color: 'c-cyan', title: 'dailyTitle', text: 'helpDailyText' },
   { id: 'endless', icon: 'infinity', color: 'c-magenta', title: 'endlessTitle', text: 'helpEndlessText' },
+  { id: 'blackout', icon: 'moon', color: 'c-dim', title: 'blackoutTitle', text: 'helpBlackoutText' },
+  { id: 'rush', icon: 'timer', color: 'c-flame', title: 'rushTitle', text: 'helpRushText' },
 ];
 
 interface HelpProps {

@@ -14,6 +14,7 @@ interface TileProps {
   igniteDelay: number; // ms; -1 = dlaždice se v této generaci nerozsvěcí
   igniteEntry: number; // světová strana, kterou světlo vteklo (-1 = jádro)
   hintMode: boolean;
+  fog: boolean; // režim Zatmění: nenapájené dlaždice jsou skryté
   onClick: () => void;
 }
 
@@ -44,6 +45,7 @@ export function TileView({
   igniteDelay,
   igniteEntry,
   hintMode,
+  fog,
   onClick,
 }: TileProps) {
   const { t } = useI18n();
@@ -74,6 +76,7 @@ export function TileView({
   if (tile.isCore) classes.push('core');
   if (shaking) classes.push('shaking');
   if (won && powered) classes.push('win');
+  if (fog && !powered) classes.push('fogged');
 
   return (
     <button

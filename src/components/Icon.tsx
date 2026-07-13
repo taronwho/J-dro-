@@ -14,7 +14,11 @@ export type IconName =
   | 'hourglass'
   | 'lock'
   | 'help'
-  | 'check';
+  | 'check'
+  | 'moon'
+  | 'timer'
+  | 'sound'
+  | 'soundOff';
 
 // Vlastní ikonografie hry: tahové SVG ikony 24×24 ve stylu trubek —
 // tenké linky, kulatá zakončení, tečky jako energetické uzly.
@@ -100,6 +104,33 @@ const PATHS: Record<IconName, ReactElement> = {
     </>
   ),
   check: <path d="M5 12.6l4.4 4.4L19 7.4" />,
+  moon: (
+    <>
+      <path d="M19.5 13.8A8 8 0 1 1 10.2 4.5 6.4 6.4 0 0 0 19.5 13.8z" />
+      <circle className="fill" cx="15.5" cy="8.5" r="1" />
+    </>
+  ),
+  timer: (
+    <>
+      <circle cx="12" cy="13.5" r="7.2" />
+      <path d="M12 13.5V9.8" />
+      <path d="M9.8 2.8h4.4" />
+      <path d="M12 2.8v3.5" />
+    </>
+  ),
+  sound: (
+    <>
+      <path d="M4 9.5v5h3.2L12 18.5v-13L7.2 9.5H4z" />
+      <path d="M15.2 9.2a4 4 0 0 1 0 5.6" />
+      <path d="M17.8 6.8a7.4 7.4 0 0 1 0 10.4" />
+    </>
+  ),
+  soundOff: (
+    <>
+      <path d="M4 9.5v5h3.2L12 18.5v-13L7.2 9.5H4z" />
+      <path d="M15.5 9.5l5 5M20.5 9.5l-5 5" />
+    </>
+  ),
 };
 
 interface IconProps {

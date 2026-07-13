@@ -44,9 +44,14 @@ body {
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+body {
+  overscroll-behavior-y: none;
 }
 
 button {
@@ -172,14 +177,14 @@ button:disabled {
 /* ---------- Herní režimy ---------- */
 
 .modes-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.6rem;
   width: min(92vw, 560px);
   margin-top: 0.3rem;
 }
 
 .mode-btn {
-  flex: 1;
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -461,6 +466,7 @@ button:disabled {
   gap: 0.9rem;
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh; /* mobilní prohlížeče: dynamický viewport bez posunu */
   padding: 0.8rem;
 }
 
@@ -532,6 +538,15 @@ button:disabled {
 .hud-limit.danger {
   color: #ff5d5d;
   font-weight: 600;
+}
+
+.hud-time {
+  color: var(--text);
+}
+
+.hud-mini-buttons {
+  display: inline-flex;
+  gap: 0.35rem;
 }
 
 .hud-buttons {
@@ -613,7 +628,14 @@ button:disabled {
   display: block;
   width: 100%;
   height: 100%;
-  transition: transform 180ms ease-out;
+  transition:
+    transform 180ms ease-out,
+    opacity 300ms ease;
+}
+
+/* Zatmění: nenapájené dlaždice jsou ve tmě — vidíš jen desku */
+.tile.fogged .pipes {
+  opacity: 0;
 }
 
 /* kovový plášť trubek */
