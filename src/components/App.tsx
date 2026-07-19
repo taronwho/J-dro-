@@ -270,6 +270,14 @@ export function App() {
   const [rushOver, setRushOver] = useState<RushOver | null>(null);
   const [lang, setLangState] = useState<Lang>(detectLang);
   const waveTimer = useRef<number | null>(null);
+  const menuScroll = useRef(0); // pozice scrollu menu pro návrat zpět
+
+  // návrat do menu obnoví původní pozici scrollu
+  useEffect(() => {
+    if (screen === 'menu') {
+      window.scrollTo(0, menuScroll.current);
+    }
+  }, [screen]);
 
   const i18n = useMemo(
     () => ({
@@ -320,6 +328,7 @@ export function App() {
 
   const startConfig = (config: LevelConfig, nextMode: Mode): void => {
     clearWaveTimer();
+    if (screen === 'menu') menuScroll.current = window.scrollY;
     window.scrollTo(0, 0);
     let state = generateLevel(config);
     // led sousedící s energií své barvy může roztát hned na startu

@@ -69,6 +69,18 @@ const STRINGS = {
   rushTitle: { cs: 'Blesková hra', en: 'Time rush', de: 'Zeit-Rausch' },
   packsTitle: { cs: 'Výzvy', en: 'Challenges', de: 'Herausforderungen' },
   campaignTitle: { cs: 'Kampaň', en: 'Campaign', de: 'Kampagne' },
+  moreModes: {
+    cs: 'Další režimy a výzvy',
+    en: 'More modes & challenges',
+    de: 'Weitere Modi & Herausforderungen',
+  },
+  rankTitle: { cs: 'Hodnost', en: 'Rank', de: 'Rang' },
+  rankProgress: {
+    cs: 'Do další hodnosti: {n} ★',
+    en: 'Next rank in: {n} ★',
+    de: 'Bis zum nächsten Rang: {n} ★',
+  },
+  rankMax: { cs: 'Nejvyšší hodnost!', en: 'Highest rank!', de: 'Höchster Rang!' },
   packColors: { cs: 'Barevné sítě', en: 'Color grids', de: 'Farbnetze' },
   packMaze: { cs: 'Bludiště', en: 'Maze', de: 'Labyrinth' },
   packIce: { cs: 'Ledové jádro', en: 'Frozen core', de: 'Eiskern' },
