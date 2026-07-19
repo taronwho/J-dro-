@@ -370,11 +370,18 @@ export function App() {
     if (game !== null) startConfig(game.config, mode);
   };
 
-  const goMenu = (): void => {
+  // šipka zpět: návrat do menu na původní pozici scrollu
+  const goBack = (): void => {
     clearWaveTimer();
     setGame(null);
     setRushOver(null);
     setScreen('menu');
+  };
+
+  // Menu: návrat do menu na výchozí pozici (nahoru)
+  const goMenu = (): void => {
+    menuScroll.current = 0;
+    goBack();
   };
 
   const toggleSound = (): void => {
@@ -723,6 +730,7 @@ export function App() {
           onHintToggle={() => setHintMode((h) => !h)}
           onHelp={() => openHelp('goal')}
           onReset={mode.kind === 'rush' ? startRush : restart}
+          onBack={goBack}
           onMenu={goMenu}
         />
         <Board

@@ -15,6 +15,7 @@ interface HUDProps {
   onHintToggle: () => void;
   onHelp: () => void;
   onReset: () => void;
+  onBack: () => void;
   onMenu: () => void;
 }
 
@@ -37,6 +38,7 @@ export function HUD({
   onHintToggle,
   onHelp,
   onReset,
+  onBack,
   onMenu,
 }: HUDProps) {
   const { t } = useI18n();
@@ -45,6 +47,14 @@ export function HUD({
   return (
     <header className="hud">
       <div className="hud-top">
+        <button
+          type="button"
+          className="btn icon-btn"
+          onClick={onBack}
+          aria-label={t('back')}
+        >
+          <Icon name="back" />
+        </button>
         <span className="hud-level">{title}</span>
         <div className="hud-buttons">
           <button

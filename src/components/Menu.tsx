@@ -11,6 +11,7 @@ import {
 import { ACHIEVEMENTS, totalStars } from '../meta/achievements';
 import { currentRank, nextRank, RANKS } from '../meta/ranks';
 import type { Progress } from './App';
+import { Flag } from './Flag';
 import type { HelpSection } from './Help';
 import { Icon, type IconName } from './Icon';
 import { RankBadge } from './RankBadge';
@@ -70,6 +71,7 @@ export function Menu({
   const [showAchievements, setShowAchievements] = useState(false);
   const [showRanks, setShowRanks] = useState(false);
   const [modesOpen, setModesOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
   const stars = totalStars(progress);
   const totalLevels = LEVELS.length + PACK_LEVEL_TOTAL;
   const maxStars = totalLevels * 3;
@@ -86,16 +88,36 @@ export function Menu({
   return (
     <div className="menu">
       <div className="lang-switch" role="group">
-        {LANGS.map((code) => (
+        <div className="lang-select">
           <button
-            key={code}
             type="button"
-            className={code === lang ? 'lang-btn active' : 'lang-btn'}
-            onClick={() => setLang(code)}
+            className="lang-current"
+            onClick={() => setLangOpen((o) => !o)}
+            aria-label={t('langLabel')}
+            aria-expanded={langOpen}
           >
-            {code.toUpperCase()}
+            <Flag lang={lang} />
+            <span className="lang-caret">{langOpen ? '▴' : '▾'}</span>
           </button>
-        ))}
+          {langOpen && (
+            <div className="lang-menu">
+              {LANGS.map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  className={code === lang ? 'lang-opt active' : 'lang-opt'}
+                  onClick={() => {
+                    setLang(code);
+                    setLangOpen(false);
+                  }}
+                >
+                  <Flag lang={code} />
+                  <span>{code.toUpperCase()}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <button
           type="button"
           className="lang-btn help-open"

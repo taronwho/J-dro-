@@ -15,6 +15,8 @@ const STRINGS = {
   target: { cs: 'Cíl: {n}', en: 'Target: {n}', de: 'Ziel: {n}' },
   reset: { cs: 'Reset', en: 'Reset', de: 'Reset' },
   menu: { cs: 'Menu', en: 'Menu', de: 'Menü' },
+  back: { cs: 'Zpět', en: 'Back', de: 'Zurück' },
+  langLabel: { cs: 'Jazyk', en: 'Language', de: 'Sprache' },
   levelDone: { cs: 'Level dokončen', en: 'Level complete', de: 'Level geschafft' },
   overlayMoves: { cs: 'Počet tahů: {n}', en: 'Moves used: {n}', de: 'Benötigte Züge: {n}' },
   best: { cs: 'Nejlepší: {n}', en: 'Best: {n}', de: 'Bestwert: {n}' },
