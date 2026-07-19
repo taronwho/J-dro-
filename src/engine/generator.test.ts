@@ -49,16 +49,39 @@ describe('generátor levelů', () => {
         }
       });
 
-      it('validní okraje: bez wrapu žádný konektor nemíří ven', () => {
+      it('validní okraje: bez wrapu míří ven jen portály', () => {
         if (config.wrap) return;
         const state = generateLevel(config);
         state.tiles.forEach((tile, i) => {
           for (let d = 0; d < 4; d++) {
             if (tile.solutionMask & (1 << d)) {
+              if (tile.portalDir === d) continue; // portál vede ven záměrně
               expect(neighborIndex(i, d as Dir, config)).not.toBe(-1);
             }
           }
         });
+      });
+
+      it('portály: páry na okraji, směr ven, řešení jimi vede', () => {
+        const state = generateLevel(config);
+        const portalTiles = state.tiles
+          .map((t, i) => ({ t, i }))
+          .filter(({ t }) => t.portalPair !== undefined);
+        expect(portalTiles.length).toBe((config.portalCount ?? 0) * 2);
+        const byPair = new Map<number, number[]>();
+        for (const { t, i } of portalTiles) {
+          const dir = t.portalDir;
+          expect(dir).toBeDefined();
+          // portál je na okraji a míří ven z pole
+          expect(neighborIndex(i, dir as Dir, config)).toBe(-1);
+          // řešení portál skutečně používá
+          expect(t.solutionMask & (1 << (dir as number))).not.toBe(0);
+          const pair = t.portalPair as number;
+          byPair.set(pair, [...(byPair.get(pair) ?? []), i]);
+        }
+        for (const cells of byPair.values()) {
+          expect(cells.length).toBe(2);
+        }
       });
 
       it('netrivialita: aspoň 3 dlaždice se liší od řešení', () => {

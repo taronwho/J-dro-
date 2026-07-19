@@ -662,11 +662,12 @@ export function App() {
   } else {
     const packNameKey =
       mode.kind === 'pack'
-        ? mode.packId === 'colors'
-          ? ('packColors' as const)
-          : mode.packId === 'maze'
-            ? ('packMaze' as const)
-            : ('packIce' as const)
+        ? ({
+            colors: 'packColors',
+            maze: 'packMaze',
+            ice: 'packIce',
+            portals: 'packPortals',
+          } as const)[mode.packId]
         : null;
     const title =
       mode.kind === 'level'

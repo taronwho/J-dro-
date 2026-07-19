@@ -23,6 +23,29 @@ export function neighborIndex(index: number, d: Dir, config: LevelConfig): numbe
   return ny * width + nx;
 }
 
+// Kam vede konektor buňky i směrem d: běžný soused, partner portálu,
+// nebo null (zeď / okraj pole). backDir = strana, kterou spoj vstupuje.
+export function linkTarget(
+  tiles: Tile[],
+  i: number,
+  d: Dir,
+  config: LevelConfig,
+): { cell: number; backDir: Dir } | null {
+  const tile = tiles[i];
+  if (tile.portalDir === d && tile.portalPair !== undefined) {
+    for (let j = 0; j < tiles.length; j++) {
+      const partnerDir = tiles[j].portalDir;
+      if (j !== i && tiles[j].portalPair === tile.portalPair && partnerDir !== undefined) {
+        return { cell: j, backDir: partnerDir };
+      }
+    }
+    return null;
+  }
+  if (((tile.wallMask ?? 0) & (1 << d)) !== 0) return null;
+  const nb = neighborIndex(i, d, config);
+  return nb === -1 ? null : { cell: nb, backDir: opposite(d) };
+}
+
 export interface FlowResult {
   powered: boolean[];
   colors: number[]; // barva nejbližšího jádra, -1 = nenapájeno
@@ -56,15 +79,14 @@ export function computeFlow(tiles: Tile[], config: LevelConfig): FlowResult {
     for (let d = 0; d < 4; d++) {
       const dir = d as Dir;
       if ((tiles[cur].mask & (1 << dir)) === 0) continue;
-      if (((tiles[cur].wallMask ?? 0) & (1 << dir)) !== 0) continue; // zeď mezi buňkami
-      const nb = neighborIndex(cur, dir, config);
-      if (nb === -1 || powered[nb]) continue;
-      if ((tiles[nb].mask & (1 << opposite(dir))) === 0) continue;
-      powered[nb] = true;
-      colors[nb] = colors[cur];
-      dists[nb] = dists[cur] + 1;
-      entryDirs[nb] = opposite(dir);
-      queue.push(nb);
+      const link = linkTarget(tiles, cur, dir, config);
+      if (link === null || powered[link.cell]) continue;
+      if ((tiles[link.cell].mask & (1 << link.backDir)) === 0) continue;
+      powered[link.cell] = true;
+      colors[link.cell] = colors[cur];
+      dists[link.cell] = dists[cur] + 1;
+      entryDirs[link.cell] = link.backDir;
+      queue.push(link.cell);
     }
   }
 
@@ -96,12 +118,11 @@ export function computeColors(tiles: Tile[], config: LevelConfig): number[] {
       for (let d = 0; d < 4; d++) {
         const dir = d as Dir;
         if ((tiles[cur].mask & (1 << dir)) === 0) continue;
-        if (((tiles[cur].wallMask ?? 0) & (1 << dir)) !== 0) continue;
-        const nb = neighborIndex(cur, dir, config);
-        if (nb === -1 || visited[nb]) continue;
-        if ((tiles[nb].mask & (1 << opposite(dir))) === 0) continue;
-        visited[nb] = true;
-        queue.push(nb);
+        const link = linkTarget(tiles, cur, dir, config);
+        if (link === null || visited[link.cell]) continue;
+        if ((tiles[link.cell].mask & (1 << link.backDir)) === 0) continue;
+        visited[link.cell] = true;
+        queue.push(link.cell);
       }
     }
   }
@@ -145,11 +166,10 @@ export function applyMelt(tiles: Tile[], config: LevelConfig): Tile[] | null {
     if (!melt) {
       for (let d = 0; d < 4 && !melt; d++) {
         const dir = d as Dir;
-        if (((tile.wallMask ?? 0) & (1 << dir)) !== 0) continue; // přes zeď led netaje
-        const nb = neighborIndex(i, dir, config);
-        if (nb === -1 || (colors[nb] & bit) === 0) continue;
-        // soused musí na led mířit konektorem
-        if ((tiles[nb].mask & (1 << opposite(dir))) !== 0) melt = true;
+        const link = linkTarget(tiles, i, dir, config); // zeď led neroztaví
+        if (link === null || (colors[link.cell] & bit) === 0) continue;
+        // soused (i skrz portál) musí na led mířit konektorem
+        if ((tiles[link.cell].mask & (1 << link.backDir)) !== 0) melt = true;
       }
     }
     if (!melt) return tile;

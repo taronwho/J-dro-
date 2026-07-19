@@ -84,6 +84,27 @@ export function Board({
         ))}
       </div>
 
+      {/* zdi mezi dlaždicemi: souvislé linky ve spárách mřížky */}
+      {game.tiles.some((t) => (t.wallMask ?? 0) !== 0) && (
+        <div
+          className="walls-layer"
+          style={{ gridTemplateColumns: `repeat(${width}, 1fr)` }}
+          aria-hidden="true"
+        >
+          {game.tiles.map((tile, i) => {
+            const wm = tile.wallMask ?? 0;
+            return (
+              <span key={i} className="wcell">
+                {(wm & 1) !== 0 && <i className="wseg n" />}
+                {(wm & 2) !== 0 && <i className="wseg e" />}
+                {(wm & 4) !== 0 && <i className="wseg s" />}
+                {(wm & 8) !== 0 && <i className="wseg w" />}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
       {showOverlay && (
         <div className="overlay">
           <div className="overlay-card">

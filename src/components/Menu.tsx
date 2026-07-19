@@ -30,6 +30,7 @@ const PACK_META: Record<PackId, { name: TKey; icon: IconName; color: string; hel
   colors: { name: 'packColors', icon: 'cores', color: 'c-magenta', help: 'targets' },
   maze: { name: 'packMaze', icon: 'wall', color: 'c-dim', help: 'walls' },
   ice: { name: 'packIce', icon: 'snowflake', color: 'c-cyan', help: 'frozen' },
+  portals: { name: 'packPortals', icon: 'portal', color: 'c-violet', help: 'portals' },
 };
 
 function Stars({ count }: { count: number }) {

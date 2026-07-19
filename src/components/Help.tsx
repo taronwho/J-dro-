@@ -18,7 +18,8 @@ export type HelpSection =
   | 'rush'
   | 'targets'
   | 'walls'
-  | 'frozen';
+  | 'frozen'
+  | 'portals';
 
 interface SectionDef {
   id: HelpSection;
@@ -37,6 +38,7 @@ const SECTIONS: SectionDef[] = [
   { id: 'targets', icon: 'target', color: 'c-magenta', title: 'helpTargets', text: 'helpTargetsText' },
   { id: 'walls', icon: 'wall', color: 'c-dim', title: 'helpWalls', text: 'helpWallsText' },
   { id: 'frozen', icon: 'snowflake', color: 'c-cyan', title: 'helpFrozen', text: 'helpFrozenText' },
+  { id: 'portals', icon: 'portal', color: 'c-violet', title: 'packPortals', text: 'helpPortalsText' },
   { id: 'limit', icon: 'hourglass', color: 'c-amber', title: 'helpLimit', text: 'helpLimitText' },
   { id: 'hints', icon: 'bulb', color: 'c-amber', title: 'helpHints', text: 'helpHintsText' },
   { id: 'streak', icon: 'flame', color: 'c-flame', title: 'helpStreak', text: 'helpStreakText' },

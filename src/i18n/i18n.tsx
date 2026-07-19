@@ -72,6 +72,7 @@ const STRINGS = {
   packColors: { cs: 'Barevné sítě', en: 'Color grids', de: 'Farbnetze' },
   packMaze: { cs: 'Bludiště', en: 'Maze', de: 'Labyrinth' },
   packIce: { cs: 'Ledové jádro', en: 'Frozen core', de: 'Eiskern' },
+  packPortals: { cs: 'Portály', en: 'Portals', de: 'Portale' },
   dailyDone: { cs: 'Dnes splněno', en: 'Done today', de: 'Heute geschafft' },
   score: { cs: 'Skóre: {n}', en: 'Score: {n}', de: 'Punkte: {n}' },
   rushOver: { cs: 'Konec času', en: 'Time is up', de: 'Zeit abgelaufen' },
@@ -161,6 +162,11 @@ const STRINGS = {
     cs: 'Mezi některými dlaždicemi stojí zeď — tudy spoj nevede, i když na sebe trubky míří. Síť ji musí obejít jako v bludišti.',
     en: 'Some tiles have a wall between them — a connection cannot pass there even if the pipes point at each other. The network must go around it, maze-style.',
     de: 'Zwischen manchen Kacheln steht eine Wand — dort führt keine Verbindung hindurch, selbst wenn die Rohre aufeinander zeigen. Das Netz muss sie wie in einem Labyrinth umgehen.',
+  },
+  helpPortalsText: {
+    cs: 'Trubka vedoucí do víru na okraji dlaždice pokračuje z párového portálu stejné barvy — klidně na druhém konci pole. Energie i barvy jím proudí úplně normálně.',
+    en: 'A pipe leading into a vortex at the edge of a tile continues from the paired portal of the same color — possibly on the other side of the board. Energy and colors flow through it just like a normal pipe.',
+    de: 'Ein Rohr, das in einen Wirbel am Kachelrand führt, setzt sich am gleichfarbigen Partnerportal fort — auch am anderen Ende des Feldes. Energie und Farben fließen ganz normal hindurch.',
   },
   helpFrozen: { cs: 'Zamrzlé dlaždice', en: 'Frozen tiles', de: 'Gefrorene Kacheln' },
   helpFrozenText: {

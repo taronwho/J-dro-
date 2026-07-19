@@ -51,7 +51,7 @@ export const CHAPTER_COUNT = LEVEL_COUNT / CHAPTER_SIZE;
 
 // ---------- Balíčky výzev: každá mechanika zvlášť, od nejlehčí po nejtěžší ----------
 
-export type PackId = 'colors' | 'maze' | 'ice';
+export type PackId = 'colors' | 'maze' | 'ice' | 'portals';
 
 export interface LevelPack {
   id: PackId;
@@ -68,6 +68,7 @@ interface PackTier {
   wallCount?: number;
   targetCount?: number;
   frozenCount?: number;
+  portalCount?: number;
 }
 
 // Vlastní číselný prostor id (1001+, 2001+, 3001+) => jiné seedy, jiné mapy
@@ -89,6 +90,7 @@ function buildPack(id: PackId, baseId: number, tiers: PackTier[]): LevelPack {
         ...(tier.wallCount !== undefined ? { wallCount: tier.wallCount } : {}),
         ...(tier.targetCount !== undefined ? { targetCount: tier.targetCount } : {}),
         ...(tier.frozenCount !== undefined ? { frozenCount: tier.frozenCount } : {}),
+        ...(tier.portalCount !== undefined ? { portalCount: tier.portalCount } : {}),
       });
     }
   }
@@ -113,12 +115,20 @@ export const PACKS: LevelPack[] = [
     { count: 2, size: 7, wrap: true, coreCount: 1, lockedCount: 2, wallCount: 14 },
   ]),
   buildPack('ice', 3000, [
-    { count: 2, size: 4, wrap: false, coreCount: 1, lockedCount: 0, frozenCount: 1 },
-    { count: 2, size: 5, wrap: false, coreCount: 1, lockedCount: 0, frozenCount: 1 },
-    { count: 2, size: 5, wrap: false, coreCount: 2, lockedCount: 0, forest: true, frozenCount: 2 },
-    { count: 2, size: 6, wrap: false, coreCount: 2, lockedCount: 0, forest: true, frozenCount: 2 },
-    { count: 2, size: 7, wrap: false, coreCount: 3, lockedCount: 0, forest: true, frozenCount: 3 },
-    { count: 2, size: 7, wrap: true, coreCount: 3, lockedCount: 2, forest: true, frozenCount: 3 },
+    { count: 2, size: 4, wrap: false, coreCount: 2, lockedCount: 0, forest: true, frozenCount: 2 },
+    { count: 2, size: 5, wrap: false, coreCount: 2, lockedCount: 0, forest: true, frozenCount: 3 },
+    { count: 2, size: 5, wrap: false, coreCount: 2, lockedCount: 0, forest: true, frozenCount: 4 },
+    { count: 2, size: 6, wrap: false, coreCount: 2, lockedCount: 0, forest: true, frozenCount: 5 },
+    { count: 2, size: 7, wrap: false, coreCount: 3, lockedCount: 0, forest: true, frozenCount: 6 },
+    { count: 2, size: 7, wrap: true, coreCount: 3, lockedCount: 2, forest: true, frozenCount: 7 },
+  ]),
+  buildPack('portals', 4000, [
+    { count: 2, size: 4, wrap: false, coreCount: 1, lockedCount: 0, portalCount: 1 },
+    { count: 2, size: 5, wrap: false, coreCount: 1, lockedCount: 0, portalCount: 1 },
+    { count: 2, size: 5, wrap: false, coreCount: 2, lockedCount: 0, forest: true, portalCount: 1, targetCount: 1 },
+    { count: 2, size: 6, wrap: false, coreCount: 2, lockedCount: 0, forest: true, portalCount: 2, targetCount: 2 },
+    { count: 2, size: 7, wrap: false, coreCount: 2, lockedCount: 0, forest: true, portalCount: 2, targetCount: 2, wallCount: 6 },
+    { count: 2, size: 7, wrap: false, coreCount: 3, lockedCount: 2, forest: true, portalCount: 2, targetCount: 3, wallCount: 8 },
   ]),
 ];
 

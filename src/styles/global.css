@@ -424,6 +424,7 @@ button:disabled {
 .c-magenta { color: var(--core-1); }
 .c-amber { color: var(--core-2); }
 .c-flame { color: #ff6b45; }
+.c-violet { color: #b26bff; }
 .c-dim { color: var(--text-dim); }
 
 /* barevné akcenty na chipech: číslo zůstává světlé, ikona barevná */
@@ -678,48 +679,127 @@ button:disabled {
   opacity: 0;
 }
 
-/* ---------- Zdi mezi dlaždicemi ---------- */
+/* ---------- Zdi mezi dlaždicemi ----------
+   Overlay mřížka shodná s hrací plochou; segmenty se kreslí do 4px spár
+   mezi dlaždicemi a s přesahem půl spáry navazují na sousední segmenty,
+   takže zdi tvoří souvislé linky jako v bludišti. */
 
-.edge-wall {
+.walls-layer {
   position: absolute;
-  background: linear-gradient(180deg, #9aa0c4, #565c80);
-  border-radius: 4px;
-  box-shadow:
-    0 0 6px rgba(0, 0, 0, 0.7),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
-  z-index: 3;
+  inset: 10px;
+  display: grid;
+  gap: 4px;
   pointer-events: none;
+  z-index: 4;
 }
 
-.edge-wall.wn {
-  top: 0;
-  left: 4%;
-  right: 4%;
-  height: 8%;
+.wcell {
+  position: relative;
 }
 
-.edge-wall.ws {
-  bottom: 0;
-  left: 4%;
-  right: 4%;
-  height: 8%;
+.wseg {
+  position: absolute;
+  display: block;
+  background: #aeb6dd;
+  border-radius: 2px;
+  box-shadow:
+    0 0 7px rgba(174, 182, 221, 0.55),
+    inset 0 0 2px rgba(255, 255, 255, 0.6);
 }
 
-.edge-wall.we {
-  right: 0;
-  top: 4%;
-  bottom: 4%;
-  width: 8%;
-  background: linear-gradient(90deg, #565c80, #9aa0c4);
+.wseg.n {
+  left: -2px;
+  right: -2px;
+  top: -4px;
+  height: 4px;
 }
 
-.edge-wall.ww {
-  left: 0;
-  top: 4%;
-  bottom: 4%;
-  width: 8%;
-  background: linear-gradient(90deg, #9aa0c4, #565c80);
+.wseg.s {
+  left: -2px;
+  right: -2px;
+  bottom: -4px;
+  height: 4px;
 }
+
+.wseg.e {
+  top: -2px;
+  bottom: -2px;
+  right: -4px;
+  width: 4px;
+}
+
+.wseg.w {
+  top: -2px;
+  bottom: -2px;
+  left: -4px;
+  width: 4px;
+}
+
+/* ---------- Portály ---------- */
+
+.portal {
+  position: absolute;
+  width: 36%;
+  height: 36%;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.portal.pd0 {
+  top: -4%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.portal.pd2 {
+  bottom: -4%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.portal.pd1 {
+  right: -4%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.portal.pd3 {
+  left: -4%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.portal svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.portal .portal-ring {
+  fill: rgba(10, 10, 18, 0.75);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+  transform-origin: 12px 12px;
+  animation: ring-spin 4s linear infinite;
+}
+
+.portal .portal-ring.inner {
+  fill: none;
+  stroke-dasharray: 3 3;
+  animation: ring-spin 2.5s linear infinite reverse;
+}
+
+.portal .portal-eye {
+  stroke: none;
+}
+
+.portal.pp0 .portal-ring { stroke: #b26bff; }
+.portal.pp0 .portal-eye { fill: #b26bff; }
+.portal.pp0 { filter: drop-shadow(0 0 6px rgba(178, 107, 255, 0.7)); }
+
+.portal.pp1 .portal-ring { stroke: #52ffa8; }
+.portal.pp1 .portal-eye { fill: #52ffa8; }
+.portal.pp1 { filter: drop-shadow(0 0 6px rgba(82, 255, 168, 0.7)); }
 
 /* ---------- Barevné cíle ---------- */
 

@@ -7,6 +7,8 @@ export interface Tile {
   isCore: boolean;
   coreColor?: number; // index barvy 0–2, jen pro jádra a vizuál
   wallMask?: number; // zdi na hranách buňky (bitmaska směrů) — tudy spoj nevede
+  portalDir?: Dir; // strana s portálem (na okraji pole, směr ven)
+  portalPair?: number; // index páru portálů; energie pokračuje z partnera
   targetColor?: number; // koncovka musí dostat energii této barvy
   frozenColor?: number; // barva, která dlaždici rozmrazí
   frozen?: boolean; // aktuálně zamrzlá (nelze otáčet)
@@ -23,6 +25,7 @@ export interface LevelConfig {
   movesMargin?: number; // limit tahů = par + margin; undefined = bez limitu
   forest?: boolean; // každé jádro napájí vlastní strom (oddělené barevné sítě)
   wallCount?: number; // počet zdí mezi dlaždicemi (hrany jako v bludišti)
+  portalCount?: number; // počet párů portálů (jen bez wrapu, na okrajích)
   targetCount?: number; // počet barevných cílů (koncovek)
   frozenCount?: number; // počet zamrzlých dlaždic (max 1 na barevnou síť)
 }

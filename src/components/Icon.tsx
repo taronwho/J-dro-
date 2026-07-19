@@ -20,7 +20,8 @@ export type IconName =
   | 'sound'
   | 'soundOff'
   | 'snowflake'
-  | 'wall';
+  | 'wall'
+  | 'portal';
 
 // Vlastní ikonografie hry: tahové SVG ikony 24×24 ve stylu trubek —
 // tenké linky, kulatá zakončení, tečky jako energetické uzly.
@@ -145,6 +146,13 @@ const PATHS: Record<IconName, ReactElement> = {
       <rect x="3" y="4.5" width="18" height="15" rx="1.5" />
       <path d="M3 9.5h18M3 14.5h18" />
       <path d="M9 4.5v5M15 9.5v5M9 14.5v5" />
+    </>
+  ),
+  portal: (
+    <>
+      <path d="M12 2.8a9.2 9.2 0 1 1-9.2 9.2" />
+      <path d="M12 7a5 5 0 1 1-5 5" />
+      <circle className="fill" cx="12" cy="12" r="1.6" />
     </>
   ),
 };

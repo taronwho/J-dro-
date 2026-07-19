@@ -74,6 +74,42 @@ export function generateLevel(config: LevelConfig): GameState {
     }
   }
 
+  // 0b. Portály — páry na okraji pole (jen bez wrapu), směr ven z pole
+  const portals: Array<{ a: number; dirA: Dir; b: number; dirB: Dir }> = [];
+  if ((config.portalCount ?? 0) > 0 && !config.wrap) {
+    const borderSides: Array<{ cell: number; dir: Dir }> = [];
+    for (let i = 0; i < n; i++) {
+      for (let d = 0; d < 4; d++) {
+        if (neighborIndex(i, d as Dir, config) === -1) {
+          borderSides.push({ cell: i, dir: d as Dir });
+        }
+      }
+    }
+    const usedCells = new Set<number>();
+    for (let p = 0; p < (config.portalCount ?? 0); p++) {
+      let a = -1;
+      let b = -1;
+      for (let attempt = 0; attempt < 200 && (a === -1 || b === -1); attempt++) {
+        const pick = borderSides[Math.floor(rng() * borderSides.length)];
+        if (usedCells.has(pick.cell)) continue;
+        if (a === -1) {
+          a = borderSides.indexOf(pick);
+          usedCells.add(pick.cell);
+        } else if (pick.cell !== borderSides[a].cell) {
+          b = borderSides.indexOf(pick);
+          usedCells.add(pick.cell);
+        }
+      }
+      if (a === -1 || b === -1) break;
+      portals.push({
+        a: borderSides[a].cell,
+        dirA: borderSides[a].dir,
+        b: borderSides[b].cell,
+        dirB: borderSides[b].dir,
+      });
+    }
+  }
+
   // 1. Pozice jader — odlišné a pokud možno nesousedící
   const cores: number[] = [];
   let attempts = 0;
@@ -95,8 +131,9 @@ export function generateLevel(config: LevelConfig): GameState {
   // Primem přes všechny buňky mimo zdi
   const solution = new Array<number>(n).fill(0);
   const region = new Array<number>(n).fill(0); // index jádra, jehož strom buňku napájí
+  const parent = new Array<number>(n).fill(-1); // rodič ve stromu (pro výběr ledů)
   const inTree = new Array<boolean>(n).fill(false);
-  const frontier: Array<{ from: number; dir: Dir }> = [];
+  const frontier: Array<{ from: number; dir: Dir; portal?: number }> = [];
   const addEdges = (from: number): void => {
     for (let d = 0; d < 4; d++) {
       const dir = d as Dir;
@@ -104,6 +141,11 @@ export function generateLevel(config: LevelConfig): GameState {
       const to = neighborIndex(from, dir, config);
       if (to !== -1 && !inTree[to]) frontier.push({ from, dir });
     }
+    // hrany skrz portály
+    portals.forEach((p, pi) => {
+      if (p.a === from && !inTree[p.b]) frontier.push({ from, dir: p.dirA, portal: pi });
+      if (p.b === from && !inTree[p.a]) frontier.push({ from, dir: p.dirB, portal: pi });
+    });
   };
   const seeds = config.forest === true ? cores : [cores[0]];
   seeds.forEach((seed, idx) => {
@@ -116,19 +158,43 @@ export function generateLevel(config: LevelConfig): GameState {
     const edge = frontier[i];
     frontier[i] = frontier[frontier.length - 1];
     frontier.pop();
-    const to = neighborIndex(edge.from, edge.dir, config);
+    let to: number;
+    let backDir: Dir;
+    if (edge.portal !== undefined) {
+      const p = portals[edge.portal];
+      to = p.a === edge.from ? p.b : p.a;
+      backDir = p.a === edge.from ? p.dirB : p.dirA;
+    } else {
+      to = neighborIndex(edge.from, edge.dir, config);
+      backDir = opposite(edge.dir);
+    }
     if (to === -1 || inTree[to]) continue;
     inTree[to] = true;
     region[to] = region[edge.from];
+    parent[to] = edge.from;
     solution[edge.from] |= 1 << edge.dir;
-    solution[to] |= 1 << opposite(edge.dir);
+    solution[to] |= 1 << backDir;
     addEdges(to);
   }
 
+  // Nevyužité portály zapoj do řešení dodatečně (vznikne smyčka — výhře nevadí)
+  for (const p of portals) {
+    if ((solution[p.a] & (1 << p.dirA)) === 0 || (solution[p.b] & (1 << p.dirB)) === 0) {
+      solution[p.a] |= 1 << p.dirA;
+      solution[p.b] |= 1 << p.dirB;
+    }
+  }
+
   // 3. Dlaždice s konektory řešení
+  const portalAt = new Map<number, { dir: Dir; pair: number }>();
+  portals.forEach((p, pi) => {
+    portalAt.set(p.a, { dir: p.dirA, pair: pi });
+    portalAt.set(p.b, { dir: p.dirB, pair: pi });
+  });
   const tiles: Tile[] = [];
   for (let i = 0; i < n; i++) {
     const coreIdx = cores.indexOf(i);
+    const portal = portalAt.get(i);
     tiles.push({
       mask: solution[i],
       solutionMask: solution[i],
@@ -136,6 +202,9 @@ export function generateLevel(config: LevelConfig): GameState {
       isCore: coreIdx !== -1,
       ...(coreIdx !== -1 ? { coreColor: coreIdx } : {}),
       ...(wallMask[i] !== 0 ? { wallMask: wallMask[i] } : {}),
+      ...(portal !== undefined
+        ? { portalDir: portal.dir, portalPair: portal.pair }
+        : {}),
     });
   }
 
@@ -173,8 +242,8 @@ export function generateLevel(config: LevelConfig): GameState {
     }
   }
 
-  // 4c. Zamrzlé dlaždice: max jedna na barevný strom, aby cesta od jádra
-  // k ledu nikdy nevedla přes jiný led (garance rozmrazitelnosti)
+  // 4c. Zamrzlé dlaždice: cesta od jádra k žádnému ledu nesmí vést přes
+  // jiný led (garance rozmrazitelnosti) — kontrola přes rodiče ve stromu
   if ((config.frozenCount ?? 0) > 0) {
     const preferFrozen: number[] = [];
     const restFrozen: number[] = [];
@@ -187,11 +256,25 @@ export function generateLevel(config: LevelConfig): GameState {
     }
     shuffle(preferFrozen);
     shuffle(restFrozen);
-    const usedRegions = new Set<number>();
+    const frozenSet = new Set<number>();
+    const blockedCells = new Set<number>(); // buňky na cestách už zvolených ledů
     for (const idx of [...preferFrozen, ...restFrozen]) {
-      if (usedRegions.size >= (config.frozenCount ?? 0)) break;
-      if (usedRegions.has(region[idx])) continue;
-      usedRegions.add(region[idx]);
+      if (frozenSet.size >= (config.frozenCount ?? 0)) break;
+      if (blockedCells.has(idx)) continue; // byl bych na cizí cestě k jádru
+      const path: number[] = [];
+      let cur = parent[idx];
+      let ok = true;
+      while (cur !== -1) {
+        if (frozenSet.has(cur)) {
+          ok = false;
+          break;
+        }
+        path.push(cur);
+        cur = parent[cur];
+      }
+      if (!ok) continue;
+      frozenSet.add(idx);
+      for (const cell of path) blockedCells.add(cell);
       tiles[idx].frozenColor = region[idx];
       tiles[idx].frozen = true;
     }
