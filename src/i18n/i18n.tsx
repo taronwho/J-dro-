@@ -106,7 +106,7 @@ const STRINGS = {
     de: 'Rettet deine Tages-Serie bei einem verpassten Tag. Wird automatisch verbraucht.',
   },
   freezeBuy: {
-    cs: 'Koupit za {n} nápověd',
+    cs: 'Koupit za {n} nápovědy',
     en: 'Buy for {n} hints',
     de: 'Für {n} Hinweise kaufen',
   },
