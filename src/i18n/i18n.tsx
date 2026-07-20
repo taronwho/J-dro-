@@ -118,10 +118,15 @@ const STRINGS = {
     de: 'Ab Rang {n}',
   },
   albumTitle: { cs: 'Album součástek', en: 'Parts album', de: 'Bauteile-Album' },
+  albumWhat: {
+    cs: 'Album je sbírka odměn za mistrovství. Každou součástku vyrobíš tím, že poprvé vyřešíš level na 3 hvězdy — je to trofej, že jsi ho zvládl dokonale.',
+    en: 'The album is a collection of mastery rewards. You craft each part by solving a level with 3 stars for the first time — a trophy proving you nailed it.',
+    de: 'Das Album ist eine Sammlung von Meisterschafts-Belohnungen. Jedes Bauteil entsteht, wenn du ein Level zum ersten Mal mit 3 Sternen löst — eine Trophäe dafür, dass du es perfekt gemeistert hast.',
+  },
   albumHint: {
-    cs: 'Fragmenty získáš za první perfektní řešení levelu (3★). Duplikát = +1 nápověda.',
-    en: 'Earn fragments for the first perfect solve of a level (3★). Duplicate = +1 hint.',
-    de: 'Fragmente gibt es für die erste perfekte Lösung eines Levels (3★). Duplikat = +1 Hinweis.',
+    cs: 'Součástky se řadí do sad. Když nějakou sadu zkompletuješ, dostaneš balík nápověd navíc. Duplikát (součástku už máš) se rovnou promění na +1 nápovědu.',
+    en: 'Parts are grouped into sets. Complete a whole set and you get a bundle of bonus hints. A duplicate (a part you already own) turns straight into +1 hint.',
+    de: 'Bauteile sind in Sets gruppiert. Vervollständige ein ganzes Set und du bekommst ein Bündel Bonus-Hinweise. Ein Duplikat (ein Bauteil, das du schon hast) wird direkt zu +1 Hinweis.',
   },
   fragmentNew: {
     cs: 'Nová součástka: {name}',
@@ -269,6 +274,60 @@ const STRINGS = {
     cs: 'Vyřeš co nejvíc polí, než vyprší čas. Start: 90 sekund, každé vyřešené pole přidá 20 sekund. Pole se postupně zvětšují.',
     en: 'Solve as many grids as you can before time runs out. Start: 90 seconds, each solved grid adds 20 seconds. Grids grow over time.',
     de: 'Löse so viele Felder wie möglich, bevor die Zeit abläuft. Start: 90 Sekunden, jedes gelöste Feld bringt 20 Sekunden. Die Felder werden größer.',
+  },
+  // Tutoriál (první level)
+  tutorialTap: {
+    cs: 'Klepni na dlaždici — otočí se o čtvrt otáčky.',
+    en: 'Tap a tile — it turns a quarter clockwise.',
+    de: 'Tippe eine Kachel — sie dreht sich eine Vierteldrehung.',
+  },
+  tutorialConnect: {
+    cs: 'Skvělé! Teď propoj všechny dlaždice se zářícím jádrem.',
+    en: 'Great! Now connect every tile to the glowing core.',
+    de: 'Super! Verbinde jetzt jede Kachel mit dem leuchtenden Kern.',
+  },
+  // Krok zpět
+  undo: { cs: 'Zpět o tah', en: 'Undo move', de: 'Zug zurück' },
+  // Nastavení
+  settingsTitle: { cs: 'Nastavení', en: 'Settings', de: 'Einstellungen' },
+  setHaptics: { cs: 'Vibrace', en: 'Vibration', de: 'Vibration' },
+  setHapticsDesc: {
+    cs: 'Jemná odezva telefonu při otočení a propojení.',
+    en: 'Subtle phone feedback on rotate and connect.',
+    de: 'Dezentes Feedback des Telefons beim Drehen und Verbinden.',
+  },
+  setMotion: { cs: 'Omezit animace', en: 'Reduce motion', de: 'Animationen reduzieren' },
+  setMotionDesc: {
+    cs: 'Vypne rozliv světla a další efekty. Šetrnější k oku i baterii.',
+    en: 'Turns off light-flow and other effects. Easier on the eyes and battery.',
+    de: 'Schaltet Lichtfluss und andere Effekte aus. Schont Augen und Akku.',
+  },
+  setSoundDesc: {
+    cs: 'Zvukové efekty otáčení, propojení a výhry.',
+    en: 'Sound effects for rotating, connecting and winning.',
+    de: 'Soundeffekte für Drehen, Verbinden und Gewinnen.',
+  },
+  on: { cs: 'Zapnuto', en: 'On', de: 'An' },
+  off: { cs: 'Vypnuto', en: 'Off', de: 'Aus' },
+  // Statistiky
+  statsTitle: { cs: 'Statistiky', en: 'Statistics', de: 'Statistiken' },
+  statSolved: { cs: 'Vyřešené levely', en: 'Solved levels', de: 'Gelöste Level' },
+  statPerfect: { cs: 'Perfektní řešení (3★)', en: 'Perfect solves (3★)', de: 'Perfekte Lösungen (3★)' },
+  statTotalStars: { cs: 'Hvězdy celkem', en: 'Total stars', de: 'Sterne gesamt' },
+  statAvgStars: { cs: 'Průměr hvězd', en: 'Average stars', de: 'Durchschnitt Sterne' },
+  statDailyStreak: { cs: 'Denní série', en: 'Daily streak', de: 'Tages-Serie' },
+  statDailyTotal: { cs: 'Denních výzev', en: 'Daily challenges', de: 'Tages-Challenges' },
+  statEndless: { cs: 'Nekonečná', en: 'Endless', de: 'Endlos' },
+  statBlackout: { cs: 'Zatmění', en: 'Blackout', de: 'Blackout' },
+  statRushBest: { cs: 'Blesková (rekord)', en: 'Rush (best)', de: 'Rausch (Best)' },
+  statCollected: { cs: 'Součástky', en: 'Parts', de: 'Bauteile' },
+  statAchievements: { cs: 'Úspěchy', en: 'Achievements', de: 'Erfolge' },
+  // Přehrání staršího dne
+  dailyReplayTitle: { cs: 'Denní: {d}', en: 'Daily: {d}', de: 'Täglich: {d}' },
+  calReplayHint: {
+    cs: 'Klepni na den a přehraj si jeho výzvu (jen trénink, bez odměn).',
+    en: 'Tap a day to replay its challenge (practice only, no rewards).',
+    de: 'Tippe einen Tag, um seine Challenge zu üben (nur Training, keine Belohnung).',
   },
   ariaCore: { cs: 'Jádro', en: 'Core', de: 'Kern' },
   ariaLocked: { cs: 'Zamčená dlaždice', en: 'Locked tile', de: 'Gesperrte Kachel' },

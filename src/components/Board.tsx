@@ -18,6 +18,7 @@ interface BoardProps {
   rushOver: RushOver | null;
   showOverlay: boolean;
   lastWin: LastWin | null;
+  tutorial: { index: number; text: string } | null;
   onTileClick: (index: number) => void;
   onNext: (() => void) | null;
   onRetry: () => void;
@@ -37,6 +38,7 @@ export function Board({
   rushOver,
   showOverlay,
   lastWin,
+  tutorial,
   onTileClick,
   onNext,
   onRetry,
@@ -59,6 +61,9 @@ export function Board({
     <div className="board-wrap">
       {hintMode && (
         <p className="hint-msg">{hints > 0 ? t('hintModeMsg') : t('hintNone')}</p>
+      )}
+      {tutorial !== null && !hintMode && (
+        <p className="coach-tip">{tutorial.text}</p>
       )}
       <div
         className={hintMode ? 'board hint-mode' : 'board'}
@@ -85,6 +90,18 @@ export function Board({
             onClick={() => onTileClick(i)}
           />
         ))}
+        {tutorial !== null && tutorial.index >= 0 && (
+          <span
+            className="coach-ring"
+            aria-hidden="true"
+            style={{
+              left: `${((tutorial.index % width) + 0.5) * (100 / width)}%`,
+              top: `${(Math.floor(tutorial.index / width) + 0.5) * (100 / height)}%`,
+              width: `${100 / width}%`,
+              height: `${100 / height}%`,
+            }}
+          />
+        )}
       </div>
 
       {/* zdi mezi dlaždicemi: souvislé linky ve spárách mřížky */}

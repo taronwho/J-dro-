@@ -1,9 +1,11 @@
 import { useI18n } from '../i18n/i18n';
-import { COLLECTION_SETS, setItems } from '../meta/collection';
+import { LEVELS, PACK_LEVEL_TOTAL } from '../levels/levels';
+import { ACHIEVEMENTS } from '../meta/achievements';
+import { COLLECTIBLES, COLLECTION_SETS, setItems } from '../meta/collection';
 import { currentRank } from '../meta/ranks';
 import { THEMES } from '../meta/themes';
 import type { Progress } from './App';
-import { Icon } from './Icon';
+import { Icon, type IconName } from './Icon';
 
 // ---------- Album součástek ----------
 
@@ -55,6 +57,7 @@ export function CollectionModal({
         <h2>
           <Icon name="album" className="c-violet heading-icon" /> {t('albumTitle')}
         </h2>
+        <p className="album-what">{t('albumWhat')}</p>
         <p className="story-intro">{t('albumHint')}</p>
         <div className="collect-sets">
           {COLLECTION_SETS.map((set) => {
@@ -160,10 +163,12 @@ export function ThemeModal({
 export function CalendarModal({
   progress,
   onBuyFreeze,
+  onReplayDay,
   onClose,
 }: {
   progress: Progress;
   onBuyFreeze: () => void;
+  onReplayDay: (date: string) => void;
   onClose: () => void;
 }) {
   const { lang, t } = useI18n();
@@ -197,18 +202,33 @@ export function CalendarModal({
             const day = i + 1;
             const done = doneSet.has(iso(day));
             const today = day === todayDay;
+            const playable = day <= todayDay; // dnešek i minulé dny lze přehrát
             const cls = done
               ? 'cal-day done'
               : today
                 ? 'cal-day today'
                 : 'cal-day';
+            if (!playable) {
+              return (
+                <span key={day} className={cls}>
+                  {day}
+                </span>
+              );
+            }
             return (
-              <span key={day} className={cls}>
+              <button
+                key={day}
+                type="button"
+                className={`${cls} playable`}
+                onClick={() => onReplayDay(iso(day))}
+                aria-label={`${t('dailyReplayTitle', { d: String(day) })}`}
+              >
                 {done ? <Icon name="check" /> : day}
-              </span>
+              </button>
             );
           })}
         </div>
+        <p className="cal-replay-hint">{t('calReplayHint')}</p>
         <div className="freeze-box">
           <span className="freeze-count">
             <Icon name="shield" className="c-cyan" /> ×{progress.freezes}
@@ -225,6 +245,209 @@ export function CalendarModal({
           >
             {t('freezeBuy', { n: 3 })}
           </button>
+        </div>
+        <button type="button" className="btn" onClick={onClose}>
+          {t('close')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Nastavení (zvuk / vibrace / animace) ----------
+
+function Switch({ on }: { on: boolean }) {
+  return (
+    <span className={on ? 'switch on' : 'switch'} aria-hidden="true">
+      <i />
+    </span>
+  );
+}
+
+export function SettingsModal({
+  soundOn,
+  onSoundToggle,
+  hapticsOn,
+  onHapticsToggle,
+  reducedMotion,
+  onMotionToggle,
+  onClose,
+}: {
+  soundOn: boolean;
+  onSoundToggle: () => void;
+  hapticsOn: boolean;
+  onHapticsToggle: () => void;
+  reducedMotion: boolean;
+  onMotionToggle: () => void;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  const rows: {
+    icon: IconName;
+    label: string;
+    desc: string;
+    on: boolean;
+    toggle: () => void;
+  }[] = [
+    {
+      icon: soundOn ? 'sound' : 'soundOff',
+      label: t('soundLabel'),
+      desc: t('setSoundDesc'),
+      on: soundOn,
+      toggle: onSoundToggle,
+    },
+    {
+      icon: 'vibrate',
+      label: t('setHaptics'),
+      desc: t('setHapticsDesc'),
+      on: hapticsOn,
+      toggle: onHapticsToggle,
+    },
+    {
+      icon: 'bolt',
+      label: t('setMotion'),
+      desc: t('setMotionDesc'),
+      on: reducedMotion,
+      toggle: onMotionToggle,
+    },
+  ];
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h2>
+          <Icon name="gear" className="c-cyan heading-icon" /> {t('settingsTitle')}
+        </h2>
+        <ul className="settings-list">
+          {rows.map((r) => (
+            <li key={r.label}>
+              <button type="button" className="settings-row" onClick={r.toggle}>
+                <span className="settings-ic">
+                  <Icon name={r.icon} />
+                </span>
+                <span className="settings-text">
+                  <strong>{r.label}</strong>
+                  <small>{r.desc}</small>
+                </span>
+                <Switch on={r.on} />
+              </button>
+            </li>
+          ))}
+        </ul>
+        <button type="button" className="btn" onClick={onClose}>
+          {t('close')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Statistiky ----------
+
+export function StatsModal({
+  progress,
+  onClose,
+}: {
+  progress: Progress;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  const totalLevels = LEVELS.length + PACK_LEVEL_TOTAL;
+  const bestEntries = Object.values(progress.best);
+  const starsSum = bestEntries.reduce((s, b) => s + b.stars, 0);
+  const perfect = bestEntries.filter((b) => b.stars === 3).length;
+  const avg =
+    bestEntries.length > 0 ? (starsSum / bestEntries.length).toFixed(2) : '0';
+
+  const cards: { icon: IconName; color: string; label: string; value: string }[] = [
+    {
+      icon: 'bolt',
+      color: 'c-cyan',
+      label: t('statSolved'),
+      value: `${progress.completed.length} / ${totalLevels}`,
+    },
+    {
+      icon: 'star',
+      color: 'c-gold',
+      label: t('statTotalStars'),
+      value: `${starsSum} / ${totalLevels * 3}`,
+    },
+    {
+      icon: 'star',
+      color: 'c-gold',
+      label: t('statPerfect'),
+      value: String(perfect),
+    },
+    {
+      icon: 'chart',
+      color: 'c-cyan',
+      label: t('statAvgStars'),
+      value: avg,
+    },
+    {
+      icon: 'flame',
+      color: 'c-flame',
+      label: t('statStreak'),
+      value: String(progress.bestStreak),
+    },
+    {
+      icon: 'calendar',
+      color: 'c-cyan',
+      label: t('statDailyStreak'),
+      value: String(progress.daily.streak),
+    },
+    {
+      icon: 'calendar',
+      color: 'c-cyan',
+      label: t('statDailyTotal'),
+      value: String(progress.daily.total),
+    },
+    {
+      icon: 'infinity',
+      color: 'c-magenta',
+      label: t('statEndless'),
+      value: String(progress.endless.total),
+    },
+    {
+      icon: 'moon',
+      color: 'c-dim',
+      label: t('statBlackout'),
+      value: String(progress.blackout.total),
+    },
+    {
+      icon: 'timer',
+      color: 'c-flame',
+      label: t('statRushBest'),
+      value: String(progress.rush.best),
+    },
+    {
+      icon: 'album',
+      color: 'c-violet',
+      label: t('statCollected'),
+      value: `${progress.collection.length} / ${COLLECTIBLES.length}`,
+    },
+    {
+      icon: 'trophy',
+      color: 'c-gold',
+      label: t('statAchievements'),
+      value: `${progress.achievements.length} / ${ACHIEVEMENTS.length}`,
+    },
+  ];
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h2>
+          <Icon name="chart" className="c-gold heading-icon" /> {t('statsTitle')}
+        </h2>
+        <div className="stats-grid">
+          {cards.map((c) => (
+            <div key={c.label} className="stat-card">
+              <span className={`stat-card-ic ${c.color}`}>
+                <Icon name={c.icon} />
+              </span>
+              <strong>{c.value}</strong>
+              <small>{c.label}</small>
+            </div>
+          ))}
         </div>
         <button type="button" className="btn" onClick={onClose}>
           {t('close')}

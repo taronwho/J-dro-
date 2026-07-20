@@ -551,7 +551,7 @@ button:disabled {
 
 .menu-tiles {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.5rem;
   width: min(92vw, 560px);
 }
@@ -1092,6 +1092,167 @@ button:disabled {
   color: var(--core-0);
 }
 
+button.cal-day.playable {
+  cursor: pointer;
+  transition:
+    transform 0.1s,
+    border-color 0.15s;
+}
+
+button.cal-day.playable:hover {
+  transform: translateY(-1px);
+  border-color: var(--core-0);
+}
+
+.cal-replay-hint {
+  margin: 0.6rem 0 0.2rem;
+  color: var(--text-dim);
+  font-size: 0.74rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.album-what {
+  margin: 0 0 0.5rem;
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+/* ---------- Nastavení ---------- */
+
+.settings-list {
+  list-style: none;
+  margin: 0 0 0.4rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  border-radius: 12px;
+  border: 1px solid var(--tile-border);
+  background: linear-gradient(180deg, #17171f, #101018);
+  text-align: left;
+  transition: border-color 0.15s;
+}
+
+.settings-row:hover {
+  border-color: var(--core-0);
+}
+
+.settings-ic {
+  flex-shrink: 0;
+  display: inline-flex;
+  color: var(--core-0);
+}
+
+.settings-ic .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.settings-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-text strong {
+  font-size: 0.9rem;
+}
+
+.settings-text small {
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.switch {
+  flex-shrink: 0;
+  width: 40px;
+  height: 22px;
+  border-radius: 12px;
+  background: #2a2a36;
+  border: 1px solid var(--tile-border);
+  position: relative;
+  transition: background 0.18s;
+}
+
+.switch i {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition:
+    transform 0.18s,
+    background 0.18s;
+}
+
+.switch.on {
+  background: rgba(34, 224, 255, 0.3);
+  border-color: var(--core-0);
+}
+
+.switch.on i {
+  transform: translateX(18px);
+  background: var(--core-0);
+  box-shadow: 0 0 6px var(--core-0);
+}
+
+/* ---------- Statistiky ---------- */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.65rem 0.3rem;
+  border-radius: 12px;
+  border: 1px solid var(--tile-border);
+  background: linear-gradient(180deg, #17171f, #101018);
+  text-align: center;
+}
+
+.stat-card-ic {
+  display: inline-flex;
+}
+
+.stat-card-ic .icon {
+  width: 20px;
+  height: 20px;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+.stat-card strong {
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-card small {
+  color: var(--text-dim);
+  font-size: 0.64rem;
+  line-height: 1.2;
+}
+
 .freeze-box {
   display: flex;
   flex-wrap: wrap;
@@ -1468,6 +1629,7 @@ button:disabled {
 }
 
 .icon-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1479,6 +1641,30 @@ button:disabled {
 .icon-btn .icon {
   width: 1.1em;
   height: 1.1em;
+}
+
+.icon-btn:disabled {
+  opacity: 0.32;
+}
+
+.undo-count {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 13px;
+  height: 13px;
+  padding: 0 2px;
+  border-radius: 7px;
+  background: var(--core-0);
+  color: #071018;
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 13px;
+  text-align: center;
+}
+
+.icon-btn:disabled .undo-count {
+  display: none;
 }
 
 .hud-level {
@@ -1592,9 +1778,53 @@ button:disabled {
 }
 
 .board {
+  position: relative;
   display: grid;
   gap: 4px;
   width: 100%;
+}
+
+/* ---------- Tutoriál (coach) ---------- */
+
+.coach-tip {
+  margin: 0 0 0.5rem;
+  text-align: center;
+  color: var(--core-0);
+  font-size: 0.9rem;
+  font-weight: 600;
+  animation: coach-fade 0.35s ease both;
+}
+
+@keyframes coach-fade {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.coach-ring {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 22%;
+  border: 3px solid var(--core-0);
+  box-shadow:
+    0 0 12px var(--core-0),
+    inset 0 0 10px var(--core-0);
+  pointer-events: none;
+  z-index: 6;
+  animation: coach-pulse 1.15s ease-in-out infinite;
+}
+
+@keyframes coach-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.02);
+  }
 }
 
 .board.hint-mode .tile:not(.locked) {
@@ -2303,4 +2533,16 @@ button:disabled {
   color: var(--text-dim);
   font-size: 0.78rem;
   line-height: 1.45;
+}
+
+/* ---------- Omezit animace ---------- */
+/* Uživatelské nastavení (data-motion) i systémová preference vypnou rozliv
+   světla a všechny ostatní efekty — zůstává jen statické zobrazení stavu. */
+:root[data-motion='reduced'] *,
+:root[data-motion='reduced'] *::before,
+:root[data-motion='reduced'] *::after {
+  animation-duration: 0.001ms !important;
+  animation-delay: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
 }

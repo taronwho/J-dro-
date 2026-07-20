@@ -11,6 +11,9 @@ interface HUDProps {
   hintMode: boolean;
   rush: RushState | null;
   soundOn: boolean;
+  canUndo: boolean;
+  undosLeft: number;
+  onUndo: () => void;
   onSoundToggle: () => void;
   onHintToggle: () => void;
   onHelp: () => void;
@@ -34,6 +37,9 @@ export function HUD({
   hintMode,
   rush,
   soundOn,
+  canUndo,
+  undosLeft,
+  onUndo,
   onSoundToggle,
   onHintToggle,
   onHelp,
@@ -65,6 +71,16 @@ export function HUD({
             disabled={hints < 1 && !hintMode}
           >
             <Icon name="bulb" className="chip-icon" /> {hints}
+          </button>
+          <button
+            type="button"
+            className="btn icon-btn"
+            onClick={onUndo}
+            aria-label={t('undo')}
+            disabled={!canUndo}
+          >
+            <Icon name="undo" />
+            {undosLeft > 0 && <span className="undo-count">{undosLeft}</span>}
           </button>
           <button
             type="button"

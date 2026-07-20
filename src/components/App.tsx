@@ -11,6 +11,8 @@ import { currentRank, type RankDef } from '../meta/ranks';
 import { loadTheme, persistTheme, THEMES } from '../meta/themes';
 import { dailyShareText, rushShareText, shareText } from '../share';
 import { isSoundEnabled, setSoundEnabled, sfx } from '../sound';
+import { haptic, isHapticsEnabled, setHapticsEnabled } from '../haptics';
+import { loadReducedMotion, persistReducedMotion } from '../motion';
 import { Board } from './Board';
 import { Help, type HelpSection } from './Help';
 import { HUD } from './HUD';
@@ -22,6 +24,7 @@ export type Mode =
   | { kind: 'level'; id: number }
   | { kind: 'pack'; packId: PackId; index: number } // index 1-based v balíčku
   | { kind: 'daily' }
+  | { kind: 'dailyReplay'; date: string } // přehrání staršího dne z kalendáře (trénink)
   | { kind: 'endless' }
   | { kind: 'blackout' }
   | { kind: 'rush' }
@@ -41,6 +44,7 @@ export interface RushOver {
 
 const RUSH_START_SECONDS = 90;
 const RUSH_BONUS_SECONDS = 20;
+const UNDO_PER_LEVEL = 3; // kolikrát lze vzít tah zpět v jednom poli
 
 export interface BestEntry {
   moves: number;
@@ -67,6 +71,7 @@ export interface Progress {
   eventsDone: number; // počet dokončených víkendových eventů
   event: { week: string; done: number[]; claimed: boolean };
   allUnlocked: boolean; // testovací odemčení (#unlock-all) — platí i pro nové levely
+  tutorialDone: boolean; // úvodní tutoriál na 1. levelu dokončen
 }
 
 // Kaskáda rozsvícení: delays[i] v ms (-1 = bez animace), entries[i] = strana vstupu světla
@@ -115,6 +120,7 @@ const EMPTY_PROGRESS: Progress = {
   eventsDone: 0,
   event: { week: '', done: [], claimed: false },
   allUnlocked: false,
+  tutorialDone: false,
 };
 
 // Fallback do paměti, když localStorage není dostupný
@@ -205,6 +211,7 @@ function loadProgress(): Progress {
                 }
               : { week: '', done: [], claimed: false },
           allUnlocked,
+          tutorialDone: parsed.tutorialDone === true,
         };
       }
     }
@@ -247,6 +254,11 @@ function dailyConfig(date: Date): LevelConfig {
     coreCount: 2,
     lockedCount: 3,
   };
+}
+
+function dateFromIso(iso: string): Date {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, (m ?? 1) - 1, d ?? 1);
 }
 
 // Náhodné seedy smí vznikat jen tady v UI vrstvě — engine je pro daný seed deterministický
@@ -310,6 +322,9 @@ export function App() {
   const [helpSection, setHelpSection] = useState<HelpSection | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [soundOn, setSoundOn] = useState<boolean>(isSoundEnabled);
+  const [hapticsOn, setHapticsOn] = useState<boolean>(isHapticsEnabled);
+  const [reducedMotion, setReducedMotion] = useState<boolean>(loadReducedMotion);
+  const [tutorialStep, setTutorialStep] = useState(0); // 0 = otoč dlaždici, 1 = propoj vše
   const [theme, setTheme] = useState<string>(loadTheme);
   const [shareToast, setShareToast] = useState(false);
   const [rush, setRush] = useState<RushState>({ score: 0, timeLeft: RUSH_START_SECONDS });
@@ -317,6 +332,9 @@ export function App() {
   const [lang, setLangState] = useState<Lang>(detectLang);
   const waveTimer = useRef<number | null>(null);
   const menuScroll = useRef(0); // pozice scrollu menu pro návrat zpět
+  // historie tahů pro krok zpět: snapshoty stavu před posledními tahy
+  const undoStack = useRef<{ tiles: Tile[]; moves: number; rotations: number[] }[]>([]);
+  const [undosLeft, setUndosLeft] = useState(UNDO_PER_LEVEL);
 
   // návrat do menu obnoví původní pozici scrollu
   useEffect(() => {
@@ -344,6 +362,10 @@ export function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
+
+  useEffect(() => {
+    document.documentElement.dataset.motion = reducedMotion ? 'reduced' : 'full';
+  }, [reducedMotion]);
 
   // Odemykací odkaz pro testování: …/#unlock-all odemkne trvale všechny
   // levely (včetně později přidaných sektorů)
@@ -398,6 +420,9 @@ export function App() {
     setHintMode(false);
     setHintUsed(false);
     setFailed(false);
+    undoStack.current = [];
+    setUndosLeft(UNDO_PER_LEVEL);
+    setTutorialStep(0);
     setScreen('game');
   };
 
@@ -409,6 +434,9 @@ export function App() {
     startConfig(pack.levels[index - 1], { kind: 'pack', packId, index });
   };
   const startDaily = (): void => startConfig(dailyConfig(new Date()), { kind: 'daily' });
+  // přehrání staršího dne (trénink) — bez odměn, jen puzzle daného data
+  const startDailyReplay = (date: string): void =>
+    startConfig(dailyConfig(dateFromIso(date)), { kind: 'dailyReplay', date });
   const startEndless = (): void => startConfig(endlessConfig(), { kind: 'endless' });
   const startBlackout = (): void => startConfig(blackoutConfig(), { kind: 'blackout' });
   const startRush = (): void => {
@@ -418,6 +446,34 @@ export function App() {
   };
   const restart = (): void => {
     if (game !== null) startConfig(game.config, mode);
+  };
+
+  // krok zpět: vrátí poslední tah (i po vyčerpání limitu) z omezené zásoby
+  const undo = (): void => {
+    if (game === null || game.won || rushOver !== null) return;
+    if (undosLeft < 1) return;
+    const snap = undoStack.current.pop();
+    if (snap === undefined) return;
+    clearWaveTimer();
+    const flow = computeFlow(snap.tiles, game.config);
+    setGame({
+      ...game,
+      tiles: snap.tiles,
+      moves: snap.moves,
+      powered: flow.powered,
+      won: false,
+    });
+    setRotations(snap.rotations);
+    // bez rozsvěcovací kaskády — jen usadíme aktuální stav
+    setIgnite((prev) => ({
+      gen: prev.gen,
+      delays: flow.dists.map(() => -1),
+      entries: flow.entryDirs,
+    }));
+    setFailed(false);
+    setHintMode(false);
+    setUndosLeft((n) => n - 1);
+    haptic.undo();
   };
 
   // šipka zpět: návrat do menu na původní pozici scrollu
@@ -438,6 +494,19 @@ export function App() {
     const next = !soundOn;
     setSoundOn(next);
     setSoundEnabled(next);
+  };
+
+  const toggleHaptics = (): void => {
+    const next = !hapticsOn;
+    setHapticsOn(next);
+    setHapticsEnabled(next);
+    if (next) haptic.connect();
+  };
+
+  const toggleMotion = (): void => {
+    const next = !reducedMotion;
+    setReducedMotion(next);
+    persistReducedMotion(next);
   };
 
   const changeTheme = (id: string): void => {
@@ -597,6 +666,8 @@ export function App() {
         hintsEarned: hintGained ? [...base.hintsEarned, id] : base.hintsEarned,
         streak,
         bestStreak: Math.max(base.bestStreak, streak),
+        tutorialDone:
+          mode.kind === 'level' && mode.id === 1 ? true : base.tutorialDone,
         collection,
         setsClaimed,
         packs:
@@ -646,6 +717,9 @@ export function App() {
             : [...base.daily.dates.slice(-119), today],
         },
       };
+    } else if (mode.kind === 'dailyReplay') {
+      // trénink staršího dne — žádné odměny ani zápis postupu
+      updated = base;
     } else if (mode.kind === 'event') {
       const event = weekendEvent(new Date());
       const cur =
@@ -730,6 +804,7 @@ export function App() {
     if (melted !== null) {
       tiles = melted;
       sfx.melt();
+      haptic.melt();
     }
     const flow = computeFlow(tiles, game.config);
     const won = checkWin(tiles, game.config);
@@ -757,6 +832,7 @@ export function App() {
 
     if (next.won) {
       sfx.win();
+      haptic.win();
       const maxDist = flow.dists.reduce((m, d) => Math.max(m, d), 0);
       clearWaveTimer();
       if (mode.kind === 'rush') {
@@ -778,10 +854,12 @@ export function App() {
     } else {
       if (anyFresh) {
         sfx.connect(fresh.filter(Boolean).length);
+        haptic.connect();
       }
       if (next.moveLimit !== null && next.moves >= next.moveLimit) {
         setFailed(true);
         sfx.fail();
+        haptic.fail();
       }
     }
   };
@@ -824,6 +902,12 @@ export function App() {
     const tile = game.tiles[index];
     if (tile.locked || tile.frozen === true) return;
     sfx.rotate();
+    haptic.rotate();
+
+    // uložíme stav před tahem pro krok zpět (omezená hloubka)
+    undoStack.current.push({ tiles: game.tiles, moves: game.moves, rotations });
+    if (undoStack.current.length > UNDO_PER_LEVEL) undoStack.current.shift();
+    if (tutorialStep === 0) setTutorialStep(1);
 
     const tiles = game.tiles.slice();
     tiles[index] = { ...tile, mask: rotateCw(tile.mask) };
@@ -849,6 +933,7 @@ export function App() {
         onSelect={startLevel}
         onSelectPack={startPack}
         onDaily={startDaily}
+        onReplayDay={startDailyReplay}
         onEndless={startEndless}
         onBlackout={startBlackout}
         onRush={startRush}
@@ -858,6 +943,10 @@ export function App() {
         onHelp={openHelp}
         soundOn={soundOn}
         onSoundToggle={toggleSound}
+        hapticsOn={hapticsOn}
+        onHapticsToggle={toggleHaptics}
+        reducedMotion={reducedMotion}
+        onMotionToggle={toggleMotion}
       />
     );
   } else {
@@ -883,7 +972,14 @@ export function App() {
                 ? i18n.t('rushTitle')
                 : mode.kind === 'event'
                   ? `${i18n.t('eventTitle')} ${mode.index}/3`
-                  : i18n.t('endlessTitle');
+                  : mode.kind === 'dailyReplay'
+                    ? i18n.t('dailyReplayTitle', {
+                        d: dateFromIso(mode.date).toLocaleDateString(
+                          lang === 'cs' ? 'cs-CZ' : lang === 'de' ? 'de-DE' : 'en-GB',
+                          { day: 'numeric', month: 'numeric' },
+                        ),
+                      })
+                    : i18n.t('endlessTitle');
     const packLen =
       mode.kind === 'pack'
         ? (PACKS.find((p) => p.id === mode.packId)?.levels.length ?? 0)
@@ -906,6 +1002,33 @@ export function App() {
               : mode.kind === 'blackout'
                 ? () => startBlackout()
                 : null;
+    const showTutorial =
+      mode.kind === 'level' &&
+      mode.id === 1 &&
+      !progress.tutorialDone &&
+      !game.won &&
+      !failed;
+    const tutorialTarget =
+      showTutorial && tutorialStep === 0
+        ? game.tiles.findIndex(
+            (tl) =>
+              !tl.locked &&
+              tl.isCore !== true &&
+              tl.frozen !== true &&
+              tl.mask !== tl.solutionMask,
+          )
+        : -1;
+    const tutorial = showTutorial
+      ? {
+          index: tutorialTarget,
+          text: tutorialStep === 0 ? i18n.t('tutorialTap') : i18n.t('tutorialConnect'),
+        }
+      : null;
+    const canUndo =
+      undosLeft > 0 &&
+      undoStack.current.length > 0 &&
+      !game.won &&
+      rushOver === null;
     content = (
       <div className="game-screen">
         <HUD
@@ -917,6 +1040,9 @@ export function App() {
           hintMode={hintMode}
           rush={mode.kind === 'rush' ? rush : null}
           soundOn={soundOn}
+          canUndo={canUndo}
+          undosLeft={undosLeft}
+          onUndo={undo}
           onSoundToggle={toggleSound}
           onHintToggle={() => setHintMode((h) => !h)}
           onHelp={() => openHelp('goal')}
@@ -935,6 +1061,7 @@ export function App() {
           rushOver={rushOver}
           showOverlay={screen === 'victory'}
           lastWin={lastWin}
+          tutorial={tutorial}
           onTileClick={handleTileClick}
           onNext={onNext}
           onRetry={restart}

@@ -12,7 +12,7 @@ import { ACHIEVEMENTS, totalStars } from '../meta/achievements';
 import { EVENT_REWARD_HINTS, isWeekend, weekendEvent } from '../meta/events';
 import { currentRank, nextRank, RANKS } from '../meta/ranks';
 import type { Progress } from './App';
-import { CalendarModal, CollectionModal, ThemeModal } from './Extras';
+import { CalendarModal, CollectionModal, SettingsModal, StatsModal, ThemeModal } from './Extras';
 import { MapView } from './MapView';
 import { Flag } from './Flag';
 import type { HelpSection } from './Help';
@@ -25,6 +25,7 @@ interface MenuProps {
   onSelect: (id: number) => void;
   onSelectPack: (packId: PackId, index: number) => void;
   onDaily: () => void;
+  onReplayDay: (date: string) => void;
   onEndless: () => void;
   onBlackout: () => void;
   onRush: () => void;
@@ -34,6 +35,10 @@ interface MenuProps {
   onHelp: (section: HelpSection | null) => void;
   soundOn: boolean;
   onSoundToggle: () => void;
+  hapticsOn: boolean;
+  onHapticsToggle: () => void;
+  reducedMotion: boolean;
+  onMotionToggle: () => void;
 }
 
 const PACK_META: Record<PackId, { name: TKey; icon: IconName; color: string; help: HelpSection }> = {
@@ -68,6 +73,7 @@ export function Menu({
   onSelect,
   onSelectPack,
   onDaily,
+  onReplayDay,
   onEndless,
   onBlackout,
   onRush,
@@ -77,6 +83,10 @@ export function Menu({
   onHelp,
   soundOn,
   onSoundToggle,
+  hapticsOn,
+  onHapticsToggle,
+  reducedMotion,
+  onMotionToggle,
 }: MenuProps) {
   const { lang, setLang, t } = useI18n();
   const [showAchievements, setShowAchievements] = useState(false);
@@ -87,6 +97,8 @@ export function Menu({
   const [showAlbum, setShowAlbum] = useState(false);
   const [showThemes, setShowThemes] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const weekend = isWeekend(new Date());
   const event = weekendEvent(new Date());
   const eventState =
@@ -146,6 +158,14 @@ export function Menu({
           aria-label={t('soundLabel')}
         >
           <Icon name={soundOn ? 'sound' : 'soundOff'} />
+        </button>
+        <button
+          type="button"
+          className="lang-btn help-open"
+          onClick={() => setShowSettings(true)}
+          aria-label={t('settingsTitle')}
+        >
+          <Icon name="gear" />
         </button>
         <button
           type="button"
@@ -308,6 +328,14 @@ export function Menu({
         >
           <Icon name="palette" />
           <small>{t('themesTitle')}</small>
+        </button>
+        <button
+          type="button"
+          className="menu-tile c-gold"
+          onClick={() => setShowStats(true)}
+        >
+          <Icon name="chart" />
+          <small>{t('statsTitle')}</small>
         </button>
       </div>
 
@@ -495,8 +523,26 @@ export function Menu({
         <CalendarModal
           progress={progress}
           onBuyFreeze={onBuyFreeze}
+          onReplayDay={(date) => {
+            setShowCalendar(false);
+            onReplayDay(date);
+          }}
           onClose={() => setShowCalendar(false)}
         />
+      )}
+      {showSettings && (
+        <SettingsModal
+          soundOn={soundOn}
+          onSoundToggle={onSoundToggle}
+          hapticsOn={hapticsOn}
+          onHapticsToggle={onHapticsToggle}
+          reducedMotion={reducedMotion}
+          onMotionToggle={onMotionToggle}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
+      {showStats && (
+        <StatsModal progress={progress} onClose={() => setShowStats(false)} />
       )}
 
       {showRanks && (
