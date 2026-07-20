@@ -28,7 +28,9 @@ export type IconName =
   | 'palette'
   | 'album'
   | 'gift'
-  | 'shield';
+  | 'shield'
+  | 'reset'
+  | 'home';
 
 // Vlastní ikonografie hry: tahové SVG ikony 24×24 ve stylu trubek —
 // tenké linky, kulatá zakončení, tečky jako energetické uzly.
@@ -208,6 +210,19 @@ const PATHS: Record<IconName, ReactElement> = {
     <>
       <path d="M12 3l7.5 3v6c0 4.4-3 7.6-7.5 9-4.5-1.4-7.5-4.6-7.5-9V6z" />
       <path d="M9 11.8l2.2 2.2 4-4.2" />
+    </>
+  ),
+  reset: (
+    <>
+      <path d="M5.2 12a6.8 6.8 0 1 0 2-4.8" />
+      <path d="M5 4.2v3.6h3.6" />
+    </>
+  ),
+  home: (
+    <>
+      <path d="M4 11.2 12 4l8 7.2" />
+      <path d="M6.2 10.2V20h11.6v-9.8" />
+      <path d="M10 20v-5.5h4V20" />
     </>
   ),
 };

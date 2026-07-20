@@ -66,11 +66,21 @@ export function HUD({
           >
             <Icon name="bulb" className="chip-icon" /> {hints}
           </button>
-          <button type="button" className="btn" onClick={onReset}>
-            {t('reset')}
+          <button
+            type="button"
+            className="btn icon-btn"
+            onClick={onReset}
+            aria-label={t('reset')}
+          >
+            <Icon name="reset" />
           </button>
-          <button type="button" className="btn" onClick={onMenu}>
-            {t('menu')}
+          <button
+            type="button"
+            className="btn icon-btn"
+            onClick={onMenu}
+            aria-label={t('menu')}
+          >
+            <Icon name="home" />
           </button>
         </div>
       </div>
