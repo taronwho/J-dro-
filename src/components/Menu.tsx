@@ -9,8 +9,10 @@ import {
   type PackId,
 } from '../levels/levels';
 import { ACHIEVEMENTS, totalStars } from '../meta/achievements';
+import { EVENT_REWARD_HINTS, isWeekend, weekendEvent } from '../meta/events';
 import { currentRank, nextRank, RANKS } from '../meta/ranks';
 import type { Progress } from './App';
+import { CalendarModal, CollectionModal, MapModal, ThemeModal } from './Extras';
 import { Flag } from './Flag';
 import type { HelpSection } from './Help';
 import { Icon, type IconName } from './Icon';
@@ -18,12 +20,16 @@ import { RankBadge } from './RankBadge';
 
 interface MenuProps {
   progress: Progress;
+  theme: string;
   onSelect: (id: number) => void;
   onSelectPack: (packId: PackId, index: number) => void;
   onDaily: () => void;
   onEndless: () => void;
   onBlackout: () => void;
   onRush: () => void;
+  onEvent: (index: number) => void;
+  onBuyFreeze: () => void;
+  onSetTheme: (id: string) => void;
   onHelp: (section: HelpSection | null) => void;
   soundOn: boolean;
   onSoundToggle: () => void;
@@ -57,12 +63,16 @@ function isoToday(): string {
 
 export function Menu({
   progress,
+  theme,
   onSelect,
   onSelectPack,
   onDaily,
   onEndless,
   onBlackout,
   onRush,
+  onEvent,
+  onBuyFreeze,
+  onSetTheme,
   onHelp,
   soundOn,
   onSoundToggle,
@@ -72,6 +82,16 @@ export function Menu({
   const [showRanks, setShowRanks] = useState(false);
   const [modesOpen, setModesOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [showAlbum, setShowAlbum] = useState(false);
+  const [showThemes, setShowThemes] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const weekend = isWeekend(new Date());
+  const event = weekendEvent(new Date());
+  const eventState =
+    progress.event.week === event.weekId
+      ? progress.event
+      : { week: event.weekId, done: [] as number[], claimed: false };
   const stars = totalStars(progress);
   const totalLevels = LEVELS.length + PACK_LEVEL_TOTAL;
   const maxStars = totalLevels * 3;
@@ -197,6 +217,99 @@ export function Menu({
         </span>
       </button>
 
+      {/* denní výzva — vždy viditelná (ritual) */}
+      <div className="daily-card">
+        <button type="button" className="daily-main" onClick={onDaily}>
+          <span className="mode-icon c-cyan">
+            <Icon name="calendar" />
+          </span>
+          <span className="mode-text">
+            <strong>{t('dailyTitle')}</strong>
+            <small>
+              {dailyDoneToday ? (
+                <>
+                  <Icon name="check" className="inline-icon c-cyan" /> {t('dailyDone')}
+                </>
+              ) : (
+                <>
+                  <Icon name="flame" className="inline-icon c-flame" />{' '}
+                  {progress.daily.streak}
+                </>
+              )}
+              {progress.freezes > 0 && (
+                <>
+                  {' '}
+                  · <Icon name="shield" className="inline-icon c-cyan" />{' '}
+                  {progress.freezes}
+                </>
+              )}
+            </small>
+          </span>
+        </button>
+        <button
+          type="button"
+          className="daily-cal"
+          onClick={() => setShowCalendar(true)}
+          aria-label={t('calendarTitle')}
+        >
+          <Icon name="calendar" />
+        </button>
+      </div>
+
+      {/* víkendový event */}
+      {weekend && (
+        <div className="event-card">
+          <header>
+            <Icon name="gift" className="inline-icon c-gold" />{' '}
+            <strong>{event.name[lang]}</strong>
+          </header>
+          <div className="event-levels">
+            {[1, 2, 3].map((i) => {
+              const done = eventState.done.includes(i);
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  className={done ? 'level-btn done' : 'level-btn open'}
+                  onClick={() => onEvent(i)}
+                >
+                  {done ? <Icon name="check" /> : i}
+                </button>
+              );
+            })}
+          </div>
+          <small>
+            {eventState.claimed
+              ? t('eventClaimed', { n: EVENT_REWARD_HINTS })
+              : t('eventReward', { n: EVENT_REWARD_HINTS })}
+          </small>
+        </div>
+      )}
+
+      {/* dlaždice: mapa příběhu, album, témata */}
+      <div className="menu-tiles">
+        <button type="button" className="menu-tile c-cyan" onClick={() => setShowMap(true)}>
+          <Icon name="map" />
+          <small>{t('mapTitle')}</small>
+        </button>
+        <button
+          type="button"
+          className="menu-tile c-violet"
+          onClick={() => setShowAlbum(true)}
+        >
+          <Icon name="album" />
+          <small>{t('albumTitle')}</small>
+        </button>
+        <button
+          type="button"
+          className="menu-tile c-magenta"
+          onClick={() => setShowThemes(true)}
+        >
+          <Icon name="palette" />
+          <small>{t('themesTitle')}</small>
+        </button>
+      </div>
+
       {/* rozbalovací sekce ostatních režimů a výzev */}
       <button
         type="button"
@@ -210,27 +323,6 @@ export function Menu({
       {modesOpen && (
         <>
           <div className="modes-row">
-            <button type="button" className="mode-btn" onClick={onDaily}>
-              <span className="mode-icon c-cyan">
-                <Icon name="calendar" />
-              </span>
-              <span className="mode-text">
-                <strong>{t('dailyTitle')}</strong>
-                <small>
-                  {dailyDoneToday ? (
-                    <>
-                      <Icon name="check" className="inline-icon c-cyan" />{' '}
-                      {t('dailyDone')}
-                    </>
-                  ) : (
-                    <>
-                      <Icon name="flame" className="inline-icon c-flame" />{' '}
-                      {progress.daily.streak}
-                    </>
-                  )}
-                </small>
-              </span>
-            </button>
             <button type="button" className="mode-btn" onClick={onEndless}>
               <span className="mode-icon c-magenta">
                 <Icon name="infinity" />
@@ -379,6 +471,26 @@ export function Menu({
           </section>
         );
       })}
+
+      {showMap && <MapModal progress={progress} onClose={() => setShowMap(false)} />}
+      {showAlbum && (
+        <CollectionModal progress={progress} onClose={() => setShowAlbum(false)} />
+      )}
+      {showThemes && (
+        <ThemeModal
+          progress={progress}
+          theme={theme}
+          onSetTheme={onSetTheme}
+          onClose={() => setShowThemes(false)}
+        />
+      )}
+      {showCalendar && (
+        <CalendarModal
+          progress={progress}
+          onBuyFreeze={onBuyFreeze}
+          onClose={() => setShowCalendar(false)}
+        />
+      )}
 
       {showRanks && (
         <div className="modal-backdrop" onClick={() => setShowRanks(false)}>

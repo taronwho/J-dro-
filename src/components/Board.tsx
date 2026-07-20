@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { computeColors, computeFlow } from '../engine/solver';
 import type { GameState } from '../engine/types';
 import { useI18n } from '../i18n/i18n';
+import { COLLECTIBLES, COLLECTION_SETS } from '../meta/collection';
 import type { Ignite, LastWin, RushOver } from './App';
 import { Icon } from './Icon';
 import { TileView } from './Tile';
@@ -21,6 +22,7 @@ interface BoardProps {
   onNext: (() => void) | null;
   onRetry: () => void;
   onRushRetry: () => void;
+  onShare: () => void;
   onMenu: () => void;
 }
 
@@ -39,6 +41,7 @@ export function Board({
   onNext,
   onRetry,
   onRushRetry,
+  onShare,
   onMenu,
 }: BoardProps) {
   const { lang, t } = useI18n();
@@ -137,10 +140,50 @@ export function Board({
                 <Icon name="bulb" className="inline-icon c-amber" /> {t('hintEarned')}
               </p>
             )}
-            {lastWin?.hintGainedDaily && (
+            {lastWin !== null && lastWin.dailyReward > 0 && (
               <p className="overlay-bonus">
-                <Icon name="bulb" className="inline-icon c-amber" />{' '}
-                {t('hintEarnedDaily')}
+                <Icon name="gift" className="inline-icon c-amber" />{' '}
+                {t('dailyRewardLine', {
+                  n: lastWin.dailyReward,
+                  s: lastWin.dailyStreak,
+                })}
+              </p>
+            )}
+            {lastWin?.freezeSaved && (
+              <p className="overlay-bonus">
+                <Icon name="shield" className="inline-icon c-cyan" /> {t('freezeUsed')}
+              </p>
+            )}
+            {lastWin?.fragment !== null && lastWin?.fragment !== undefined && (
+              <p className="overlay-bonus">
+                <Icon name="album" className="inline-icon c-violet" />{' '}
+                {lastWin.fragment.isNew
+                  ? t('fragmentNew', {
+                      name: COLLECTIBLES[lastWin.fragment.id].name[lang],
+                    })
+                  : t('fragmentDup', {
+                      name: COLLECTIBLES[lastWin.fragment.id].name[lang],
+                    })}
+              </p>
+            )}
+            {lastWin?.setCompleted !== null && lastWin?.setCompleted !== undefined && (
+              <p className="overlay-bonus">
+                <Icon name="gift" className="inline-icon c-gold" />{' '}
+                {t('setComplete', {
+                  name: COLLECTION_SETS[lastWin.setCompleted].name[lang],
+                  n: COLLECTION_SETS[lastWin.setCompleted].reward,
+                })}
+              </p>
+            )}
+            {lastWin?.rankUp !== null && lastWin?.rankUp !== undefined && (
+              <p className="overlay-record">
+                {t('rankUp', { name: lastWin.rankUp.name[lang], n: 2 })}
+              </p>
+            )}
+            {lastWin?.eventDone && (
+              <p className="overlay-bonus">
+                <Icon name="gift" className="inline-icon c-gold" />{' '}
+                {t('eventClaimed', { n: 3 })}
               </p>
             )}
             {lastWin && lastWin.achievements.length > 0 && (
@@ -158,6 +201,11 @@ export function Board({
               </div>
             )}
             <div className="overlay-buttons">
+              {lastWin?.shareable && (
+                <button type="button" className="btn" onClick={onShare}>
+                  <Icon name="share" className="inline-icon" /> {t('share')}
+                </button>
+              )}
               {onNext && (
                 <button type="button" className="btn primary" onClick={onNext}>
                   {t('next')}
@@ -215,6 +263,9 @@ export function Board({
               </div>
             )}
             <div className="overlay-buttons">
+              <button type="button" className="btn" onClick={onShare}>
+                <Icon name="share" className="inline-icon" /> {t('share')}
+              </button>
               <button type="button" className="btn primary" onClick={onRushRetry}>
                 {t('retry')}
               </button>

@@ -11,6 +11,8 @@ export interface AchievementProgress {
   endless: { total: number };
   blackout: { total: number };
   rush: { best: number };
+  setsClaimed: number[];
+  eventsDone: number;
 }
 
 export interface AchievementDef {
@@ -281,6 +283,28 @@ export const ACHIEVEMENTS: AchievementDef[] = [
       de: 'Schließe Level 120 ab.',
     },
     check: (p) => p.completed.includes(120),
+  },
+  {
+    id: 'collector',
+    reward: 2,
+    name: { cs: 'Sběratel', en: 'Collector', de: 'Sammler' },
+    desc: {
+      cs: 'Zkompletuj první sadu v albu součástek.',
+      en: 'Complete your first set in the parts album.',
+      de: 'Vervollständige dein erstes Set im Bauteile-Album.',
+    },
+    check: (p) => p.setsClaimed.length >= 1,
+  },
+  {
+    id: 'event-first',
+    reward: 2,
+    name: { cs: 'Víkendový hrdina', en: 'Weekend hero', de: 'Wochenendheld' },
+    desc: {
+      cs: 'Dokonči celý víkendový event.',
+      en: 'Complete a whole weekend event.',
+      de: 'Schließe ein ganzes Wochenend-Event ab.',
+    },
+    check: (p) => p.eventsDone >= 1,
   },
   {
     id: 'specialist',

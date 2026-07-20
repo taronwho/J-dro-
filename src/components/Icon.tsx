@@ -22,7 +22,13 @@ export type IconName =
   | 'snowflake'
   | 'wall'
   | 'portal'
-  | 'back';
+  | 'back'
+  | 'map'
+  | 'share'
+  | 'palette'
+  | 'album'
+  | 'gift'
+  | 'shield';
 
 // Vlastní ikonografie hry: tahové SVG ikony 24×24 ve stylu trubek —
 // tenké linky, kulatá zakončení, tečky jako energetické uzly.
@@ -160,6 +166,48 @@ const PATHS: Record<IconName, ReactElement> = {
     <>
       <path d="M15 5l-7 7 7 7" />
       <path d="M8 12h11" />
+    </>
+  ),
+  map: (
+    <>
+      <path d="M3 6.5l6-2.5 6 2.5 6-2.5v13.5l-6 2.5-6-2.5-6 2.5z" />
+      <path d="M9 4v13.5M15 6.5V20" />
+    </>
+  ),
+  share: (
+    <>
+      <circle cx="6" cy="12" r="2.6" />
+      <circle cx="17.5" cy="5.5" r="2.6" />
+      <circle cx="17.5" cy="18.5" r="2.6" />
+      <path d="M8.4 10.8l6.8-4M8.4 13.2l6.8 4" />
+    </>
+  ),
+  palette: (
+    <>
+      <path d="M12 3a9 9 0 1 0 0 18c1.5 0 2.2-.9 2.2-2 0-1-.7-1.6-.7-2.5 0-1.2 1-2 2.2-2h1.8A3.5 3.5 0 0 0 21 11c-.4-4.5-4.3-8-9-8z" />
+      <circle className="fill" cx="7.8" cy="10.5" r="1.4" />
+      <circle className="fill" cx="12" cy="7.6" r="1.4" />
+      <circle className="fill" cx="16.2" cy="10" r="1.4" />
+    </>
+  ),
+  album: (
+    <>
+      <rect x="3.5" y="5" width="17" height="15" rx="2" />
+      <path d="M3.5 10h17M9.2 10v10M14.8 10v10" />
+      <path d="M8 5V3.4M16 5V3.4" />
+    </>
+  ),
+  gift: (
+    <>
+      <rect x="4" y="10" width="16" height="10.5" rx="1.5" />
+      <path d="M4 14h16M12 10v10.5" />
+      <path d="M12 10c-4 0-5.5-1.3-5.5-3A2.4 2.4 0 0 1 9 4.6c2 0 3 2.4 3 5.4zm0 0c4 0 5.5-1.3 5.5-3A2.4 2.4 0 0 0 15 4.6c-2 0-3 2.4-3 5.4z" />
+    </>
+  ),
+  shield: (
+    <>
+      <path d="M12 3l7.5 3v6c0 4.4-3 7.6-7.5 9-4.5-1.4-7.5-4.6-7.5-9V6z" />
+      <path d="M9 11.8l2.2 2.2 4-4.2" />
     </>
   ),
 };

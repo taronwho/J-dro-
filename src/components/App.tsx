@@ -4,7 +4,12 @@ import { applyMelt, checkWin, computeFlow } from '../engine/solver';
 import type { GameState, LevelConfig, Tile } from '../engine/types';
 import { detectLang, I18nContext, makeT, persistLang, type Lang } from '../i18n/i18n';
 import { LEVELS, LEVEL_COUNT, PACKS, type PackId } from '../levels/levels';
-import { newlyUnlocked, type AchievementDef } from '../meta/achievements';
+import { newlyUnlocked, totalStars, type AchievementDef } from '../meta/achievements';
+import { collectibleForLevel, COLLECTION_SETS, setItems } from '../meta/collection';
+import { EVENT_REWARD_HINTS, isWeekend, weekendEvent } from '../meta/events';
+import { currentRank, type RankDef } from '../meta/ranks';
+import { loadTheme, persistTheme, THEMES } from '../meta/themes';
+import { dailyShareText, rushShareText, shareText } from '../share';
 import { isSoundEnabled, setSoundEnabled, sfx } from '../sound';
 import { Board } from './Board';
 import { Help, type HelpSection } from './Help';
@@ -19,7 +24,8 @@ export type Mode =
   | { kind: 'daily' }
   | { kind: 'endless' }
   | { kind: 'blackout' }
-  | { kind: 'rush' };
+  | { kind: 'rush' }
+  | { kind: 'event'; index: number }; // 1–3 v rámci víkendového eventu
 
 export interface RushState {
   score: number;
@@ -50,11 +56,16 @@ export interface Progress {
   achievements: string[];
   streak: number; // aktuální série perfektních řešení
   bestStreak: number;
-  daily: { last: string; streak: number; total: number };
+  daily: { last: string; streak: number; total: number; dates: string[] };
   endless: { total: number };
   blackout: { total: number };
   rush: { best: number };
   packs: Record<string, number>; // odemčený index v každém balíčku výzev (1+)
+  freezes: number; // zmrazení denní série
+  collection: number[]; // vlastněné součástky alba (0–11)
+  setsClaimed: number[]; // vyzvednuté odměny za sady
+  eventsDone: number; // počet dokončených víkendových eventů
+  event: { week: string; done: number[]; claimed: boolean };
   allUnlocked: boolean; // testovací odemčení (#unlock-all) — platí i pro nové levely
 }
 
@@ -70,9 +81,16 @@ export interface LastWin {
   newRecord: boolean;
   bestMoves: number | null; // null = režim bez rekordů (denní / nekonečná)
   hintGained: boolean;
-  hintGainedDaily: boolean; // odměna za denní výzvu (jiný text v overlayi)
   hintUsed: boolean;
   achievements: AchievementDef[];
+  dailyReward: number; // nápovědy za denní výzvu (eskalace dle série)
+  dailyStreak: number;
+  freezeSaved: boolean; // zmrazení zachránilo sérii
+  fragment: { id: number; isNew: boolean } | null; // součástka do alba
+  setCompleted: number | null; // dokončená sada alba
+  rankUp: RankDef | null; // povýšení hodnosti
+  eventDone: boolean; // dokončen celý víkendový event
+  shareable: boolean; // zobrazit tlačítko sdílení
 }
 
 const STORAGE_KEY = 'jadro-progress';
@@ -86,11 +104,16 @@ const EMPTY_PROGRESS: Progress = {
   achievements: [],
   streak: 0,
   bestStreak: 0,
-  daily: { last: '', streak: 0, total: 0 },
+  daily: { last: '', streak: 0, total: 0, dates: [] },
   endless: { total: 0 },
   blackout: { total: 0 },
   rush: { best: 0 },
   packs: {},
+  freezes: 0,
+  collection: [],
+  setsClaimed: [],
+  eventsDone: 0,
+  event: { week: '', done: [], claimed: false },
   allUnlocked: false,
 };
 
@@ -138,8 +161,15 @@ function loadProgress(): Progress {
             typeof daily.last === 'string' &&
             typeof daily.streak === 'number' &&
             typeof daily.total === 'number'
-              ? { last: daily.last, streak: daily.streak, total: daily.total }
-              : { last: '', streak: 0, total: 0 },
+              ? {
+                  last: daily.last,
+                  streak: daily.streak,
+                  total: daily.total,
+                  dates: Array.isArray(daily.dates)
+                    ? daily.dates.filter((x): x is string => typeof x === 'string')
+                    : [],
+                }
+              : { last: '', streak: 0, total: 0, dates: [] },
           endless:
             endless && typeof endless.total === 'number'
               ? { total: endless.total }
@@ -160,6 +190,20 @@ function loadProgress(): Progress {
                   ),
                 )
               : {},
+          freezes: typeof parsed.freezes === 'number' ? Math.max(0, parsed.freezes) : 0,
+          collection: nums(parsed.collection),
+          setsClaimed: nums(parsed.setsClaimed),
+          eventsDone: typeof parsed.eventsDone === 'number' ? parsed.eventsDone : 0,
+          event:
+            parsed.event &&
+            typeof parsed.event.week === 'string' &&
+            Array.isArray(parsed.event.done)
+              ? {
+                  week: parsed.event.week,
+                  done: nums(parsed.event.done),
+                  claimed: parsed.event.claimed === true,
+                }
+              : { week: '', done: [], claimed: false },
           allUnlocked,
         };
       }
@@ -266,6 +310,8 @@ export function App() {
   const [helpSection, setHelpSection] = useState<HelpSection | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [soundOn, setSoundOn] = useState<boolean>(isSoundEnabled);
+  const [theme, setTheme] = useState<string>(loadTheme);
+  const [shareToast, setShareToast] = useState(false);
   const [rush, setRush] = useState<RushState>({ score: 0, timeLeft: RUSH_START_SECONDS });
   const [rushOver, setRushOver] = useState<RushOver | null>(null);
   const [lang, setLangState] = useState<Lang>(detectLang);
@@ -294,6 +340,10 @@ export function App() {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
 
   // Odemykací odkaz pro testování: …/#unlock-all odemkne trvale všechny
   // levely (včetně později přidaných sektorů)
@@ -390,6 +440,51 @@ export function App() {
     setSoundEnabled(next);
   };
 
+  const changeTheme = (id: string): void => {
+    const def = THEMES.find((th) => th.id === id);
+    if (def === undefined) return;
+    if (currentRank(totalStars(progress)).rank < def.minRank) return;
+    setTheme(id);
+    persistTheme(id);
+  };
+
+  const buyFreeze = (): void => {
+    const COST = 3;
+    if (progress.hints < COST || progress.freezes >= 3) return;
+    const updated: Progress = {
+      ...progress,
+      hints: progress.hints - COST,
+      freezes: progress.freezes + 1,
+    };
+    setProgress(updated);
+    saveProgress(updated);
+    sfx.hint();
+  };
+
+  const startEvent = (index: number): void => {
+    const event = weekendEvent(new Date());
+    if (!isWeekend(new Date()) || index < 1 || index > event.levels.length) return;
+    startConfig(event.levels[index - 1], { kind: 'event', index });
+  };
+
+  const handleShare = async (): Promise<void> => {
+    let text: string | null = null;
+    if (rushOver !== null) {
+      text = rushShareText(rushOver.score, rushOver.best);
+    } else if (game !== null && lastWin !== null && mode.kind === 'daily') {
+      const label = new Date().toLocaleDateString(
+        lang === 'cs' ? 'cs-CZ' : lang === 'de' ? 'de-DE' : 'en-GB',
+      );
+      text = dailyShareText(game, lastWin.stars, progress.daily.streak, label);
+    }
+    if (text === null) return;
+    const result = await shareText(text);
+    if (result.copied) {
+      setShareToast(true);
+      window.setTimeout(() => setShareToast(false), 2200);
+    }
+  };
+
   const endRush = (finalScore: number): void => {
     clearWaveTimer();
     const newBest = finalScore > progress.rush.best;
@@ -446,6 +541,12 @@ export function App() {
     let newRecord = false;
     let bestMoves: number | null = null;
     let hintGained = false;
+    let dailyReward = 0;
+    let dailyStreak = base.daily.streak;
+    let freezeSaved = false;
+    let fragment: { id: number; isNew: boolean } | null = null;
+    let setCompleted: number | null = null;
+    let eventDone = false;
 
     if (mode.kind === 'level' || mode.kind === 'pack') {
       // kampaň i balíčky výzev sdílejí postup přes unikátní id levelu
@@ -455,6 +556,30 @@ export function App() {
       bestMoves = newRecord ? next.moves : prevBest.moves;
       hintGained = stars === 3 && !base.hintsEarned.includes(id);
       const streak = stars === 3 ? base.streak + 1 : 0;
+
+      // album: fragment za první perfektní řešení; duplikát = +1 nápověda
+      let collection = base.collection;
+      let setsClaimed = base.setsClaimed;
+      let extraHints = 0;
+      if (hintGained) {
+        const itemId = collectibleForLevel(id);
+        if (!collection.includes(itemId)) {
+          collection = [...collection, itemId];
+          fragment = { id: itemId, isNew: true };
+          for (const set of COLLECTION_SETS) {
+            if (setsClaimed.includes(set.id)) continue;
+            if (setItems(set.id).every((it) => collection.includes(it.id))) {
+              setsClaimed = [...setsClaimed, set.id];
+              extraHints += set.reward;
+              setCompleted = set.id;
+            }
+          }
+        } else {
+          fragment = { id: itemId, isNew: false };
+          extraHints += 1;
+        }
+      }
+
       updated = {
         ...base,
         unlocked:
@@ -468,10 +593,12 @@ export function App() {
           ...base.best,
           [id]: { moves: bestMoves, stars: Math.max(stars, prevBest?.stars ?? 0) },
         },
-        hints: base.hints + (hintGained ? 1 : 0),
+        hints: base.hints + (hintGained ? 1 : 0) + extraHints,
         hintsEarned: hintGained ? [...base.hintsEarned, id] : base.hintsEarned,
         streak,
         bestStreak: Math.max(base.bestStreak, streak),
+        collection,
+        setsClaimed,
         packs:
           mode.kind === 'pack'
             ? {
@@ -489,20 +616,59 @@ export function App() {
     } else if (mode.kind === 'daily') {
       const today = isoDate(new Date());
       const yesterday = isoDate(new Date(Date.now() - 86400000));
+      const dayBefore = isoDate(new Date(Date.now() - 2 * 86400000));
       const already = base.daily.last === today;
-      hintGained = !already;
+      let freezes = base.freezes;
+      if (already) {
+        dailyStreak = base.daily.streak;
+      } else if (base.daily.last === yesterday) {
+        dailyStreak = base.daily.streak + 1;
+      } else if (base.daily.last === dayBefore && freezes > 0) {
+        // zmrazení automaticky zachrání sérii při jednom vynechaném dni
+        freezes -= 1;
+        freezeSaved = true;
+        dailyStreak = base.daily.streak + 1;
+      } else {
+        dailyStreak = 1;
+      }
+      // eskalující odměna podle série: 1 → až 3 nápovědy
+      dailyReward = already ? 0 : Math.min(3, 1 + Math.floor(dailyStreak / 3));
       updated = {
         ...base,
-        hints: base.hints + (hintGained ? 1 : 0),
+        hints: base.hints + dailyReward,
+        freezes,
         daily: {
           last: today,
-          streak: already
-            ? base.daily.streak
-            : base.daily.last === yesterday
-              ? base.daily.streak + 1
-              : 1,
+          streak: dailyStreak,
           total: base.daily.total + (already ? 0 : 1),
+          dates: already
+            ? base.daily.dates
+            : [...base.daily.dates.slice(-119), today],
         },
+      };
+    } else if (mode.kind === 'event') {
+      const event = weekendEvent(new Date());
+      const cur =
+        base.event.week === event.weekId
+          ? base.event
+          : { week: event.weekId, done: [], claimed: false };
+      const done = cur.done.includes(mode.index)
+        ? cur.done
+        : [...cur.done, mode.index];
+      let claimed = cur.claimed;
+      let hintsAdd = 0;
+      let eventsDone = base.eventsDone;
+      if (!claimed && done.length >= event.levels.length) {
+        claimed = true;
+        eventDone = true;
+        hintsAdd = EVENT_REWARD_HINTS;
+        eventsDone += 1;
+      }
+      updated = {
+        ...base,
+        hints: base.hints + hintsAdd,
+        event: { week: event.weekId, done, claimed },
+        eventsDone,
       };
     } else if (mode.kind === 'blackout') {
       updated = { ...base, blackout: { total: base.blackout.total + 1 } };
@@ -523,16 +689,31 @@ export function App() {
       window.setTimeout(() => sfx.achievement(), 800);
     }
 
+    // povýšení hodnosti = bonusové nápovědy
+    let rankUp: RankDef | null = null;
+    const rankAfter = currentRank(totalStars(updated));
+    if (rankAfter.rank > currentRank(totalStars(base)).rank) {
+      rankUp = rankAfter;
+      updated = { ...updated, hints: updated.hints + 2 };
+    }
+
     setProgress(updated);
     saveProgress(updated);
     setLastWin({
       stars,
       newRecord,
       bestMoves,
-      hintGained: mode.kind === 'level' && hintGained,
-      hintGainedDaily: mode.kind === 'daily' && hintGained,
+      hintGained: (mode.kind === 'level' || mode.kind === 'pack') && hintGained,
       hintUsed: usedHint,
       achievements: unlockedAchievements,
+      dailyReward,
+      dailyStreak,
+      freezeSaved,
+      fragment,
+      setCompleted,
+      rankUp,
+      eventDone,
+      shareable: mode.kind === 'daily',
     });
   };
 
@@ -664,12 +845,16 @@ export function App() {
     content = (
       <Menu
         progress={progress}
+        theme={theme}
         onSelect={startLevel}
         onSelectPack={startPack}
         onDaily={startDaily}
         onEndless={startEndless}
         onBlackout={startBlackout}
         onRush={startRush}
+        onEvent={startEvent}
+        onBuyFreeze={buyFreeze}
+        onSetTheme={changeTheme}
         onHelp={openHelp}
         soundOn={soundOn}
         onSoundToggle={toggleSound}
@@ -696,7 +881,9 @@ export function App() {
               ? i18n.t('blackoutTitle')
               : mode.kind === 'rush'
                 ? i18n.t('rushTitle')
-                : i18n.t('endlessTitle');
+                : mode.kind === 'event'
+                  ? `${i18n.t('eventTitle')} ${mode.index}/3`
+                  : i18n.t('endlessTitle');
     const packLen =
       mode.kind === 'pack'
         ? (PACKS.find((p) => p.id === mode.packId)?.levels.length ?? 0)
@@ -710,11 +897,15 @@ export function App() {
           ? mode.index < packLen
             ? () => startPack(mode.packId, mode.index + 1)
             : null
-          : mode.kind === 'endless'
-            ? () => startEndless()
-            : mode.kind === 'blackout'
-              ? () => startBlackout()
-              : null;
+          : mode.kind === 'event'
+            ? mode.index < 3
+              ? () => startEvent(mode.index + 1)
+              : null
+            : mode.kind === 'endless'
+              ? () => startEndless()
+              : mode.kind === 'blackout'
+                ? () => startBlackout()
+                : null;
     content = (
       <div className="game-screen">
         <HUD
@@ -748,6 +939,7 @@ export function App() {
           onNext={onNext}
           onRetry={restart}
           onRushRetry={startRush}
+          onShare={() => void handleShare()}
           onMenu={goMenu}
         />
       </div>
@@ -758,6 +950,7 @@ export function App() {
     <I18nContext.Provider value={i18n}>
       {content}
       {showHelp && <Help highlight={helpSection} onClose={() => setShowHelp(false)} />}
+      {shareToast && <div className="toast">{i18n.t('shareCopied')}</div>}
     </I18nContext.Provider>
   );
 }
