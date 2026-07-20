@@ -12,7 +12,8 @@ import { ACHIEVEMENTS, totalStars } from '../meta/achievements';
 import { EVENT_REWARD_HINTS, isWeekend, weekendEvent } from '../meta/events';
 import { currentRank, nextRank, RANKS } from '../meta/ranks';
 import type { Progress } from './App';
-import { CalendarModal, CollectionModal, MapModal, ThemeModal } from './Extras';
+import { CalendarModal, CollectionModal, ThemeModal } from './Extras';
+import { MapView } from './MapView';
 import { Flag } from './Flag';
 import type { HelpSection } from './Help';
 import { Icon, type IconName } from './Icon';
@@ -472,7 +473,13 @@ export function Menu({
         );
       })}
 
-      {showMap && <MapModal progress={progress} onClose={() => setShowMap(false)} />}
+      {showMap && (
+        <MapView
+          progress={progress}
+          onSelect={onSelect}
+          onClose={() => setShowMap(false)}
+        />
+      )}
       {showAlbum && (
         <CollectionModal progress={progress} onClose={() => setShowAlbum(false)} />
       )}

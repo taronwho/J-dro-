@@ -2,7 +2,7 @@ type Lang = 'cs' | 'en' | 'de';
 
 export interface SectorStory {
   sector: number; // 1–6
-  x: number; // pozice uzlu na mapě (viewBox 100×80)
+  x: number; // pozice uzlu na mapě Kory (viewBox 100×220, cesta zdola nahoru)
   y: number;
   name: Record<Lang, string>;
   text: Record<Lang, string>;
@@ -20,8 +20,8 @@ export const STORY_INTRO: Record<Lang, string> = {
 export const SECTOR_STORIES: SectorStory[] = [
   {
     sector: 1,
-    x: 18,
-    y: 62,
+    x: 30,
+    y: 193,
     name: { cs: 'Okraj města', en: 'City outskirts', de: 'Stadtrand' },
     text: {
       cs: 'První bloky se probouzejí. Malé rozvody, jedno jádro — nauč se, jak energie teče.',
@@ -31,8 +31,8 @@ export const SECTOR_STORIES: SectorStory[] = [
   },
   {
     sector: 2,
-    x: 38,
-    y: 48,
+    x: 68,
+    y: 160,
     name: { cs: 'Průmyslová zóna', en: 'Industrial zone', de: 'Industriezone' },
     text: {
       cs: 'Továrny potřebují proud. Sítě rostou a okraje světa se začínají propojovat dokola.',
@@ -42,8 +42,8 @@ export const SECTOR_STORIES: SectorStory[] = [
   },
   {
     sector: 3,
-    x: 30,
-    y: 24,
+    x: 28,
+    y: 126,
     name: { cs: 'Podzemní kolektory', en: 'Underground collectors', de: 'Untergrundkollektoren' },
     text: {
       cs: 'Hluboko pod městem běží víc jader najednou a části rozvodů jsou pevně zamčené.',
@@ -53,8 +53,8 @@ export const SECTOR_STORIES: SectorStory[] = [
   },
   {
     sector: 4,
-    x: 56,
-    y: 36,
+    x: 63,
+    y: 94,
     name: { cs: 'Centrum města', en: 'City center', de: 'Stadtzentrum' },
     text: {
       cs: 'Srdce Kory. Rozvody jsou spletité a každé zaváhání se počítá — energie ubývá.',
@@ -64,8 +64,8 @@ export const SECTOR_STORIES: SectorStory[] = [
   },
   {
     sector: 5,
-    x: 74,
-    y: 52,
+    x: 38,
+    y: 60,
     name: { cs: 'Horské uzly', en: 'Mountain nodes', de: 'Bergknoten' },
     text: {
       cs: 'Přenosové uzly v horách mají přísné limity. Jen přesné zásahy vrátí spojení údolím.',
@@ -75,8 +75,8 @@ export const SECTOR_STORIES: SectorStory[] = [
   },
   {
     sector: 6,
-    x: 84,
-    y: 22,
+    x: 60,
+    y: 24,
     name: { cs: 'Polární stanice', en: 'Polar station', de: 'Polarstation' },
     text: {
       cs: 'Poslední výspa: zdi, led a barevné okruhy. Obnov výzkumnou stanici a Kora se rozzáří celá.',
