@@ -237,8 +237,9 @@ const PATHS: Record<IconName, ReactElement> = {
   ),
   gear: (
     <>
-      <circle cx="12" cy="12" r="3.1" />
-      <path d="M12 2.6v3M12 18.4v3M2.6 12h3M18.4 12h3M5.4 5.4l2.1 2.1M16.5 16.5l2.1 2.1M18.6 5.4l-2.1 2.1M7.5 16.5l-2.1 2.1" />
+      <circle cx="12" cy="12" r="7.4" />
+      <circle cx="12" cy="12" r="2.9" />
+      <path d="M12 4.6V2M12 22v-2.6M4.6 12H2M22 12h-2.6M17.3 6.7l1.8-1.8M6.7 17.3l-1.8 1.8M17.3 17.3l1.8 1.8M6.7 6.7 4.9 4.9" />
     </>
   ),
   chart: (

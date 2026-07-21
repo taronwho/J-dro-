@@ -11,7 +11,8 @@ interface IntroProps {
 export function Intro({ reducedMotion, onDone }: IntroProps) {
   const { t } = useI18n();
   const [leaving, setLeaving] = useState(false);
-  const total = reducedMotion ? 1000 : 2700;
+  // celkové trvání: po dobrání animací drží plný obraz ~1,4 s na přečtení
+  const total = reducedMotion ? 1500 : 4400;
 
   useEffect(() => {
     const t1 = window.setTimeout(() => setLeaving(true), total - 460);

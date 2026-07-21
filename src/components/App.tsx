@@ -332,7 +332,14 @@ export function App() {
   const [rush, setRush] = useState<RushState>({ score: 0, timeLeft: RUSH_START_SECONDS });
   const [rushOver, setRushOver] = useState<RushOver | null>(null);
   const [lang, setLangState] = useState<Lang>(detectLang);
-  const [showIntro, setShowIntro] = useState(true);
+  const [showIntro, setShowIntro] = useState(() => {
+    // intro jednou za spuštění (relaci) — reload stránky ho už neopakuje
+    try {
+      return window.sessionStorage.getItem('jadro-intro') !== '1';
+    } catch {
+      return true;
+    }
+  });
   const [sectorNum, setSectorNum] = useState(1); // číslo dokončeného sektoru pro oslavu
   const sectorClearRef = useRef<number | null>(null);
   const waveTimer = useRef<number | null>(null);
@@ -363,6 +370,14 @@ export function App() {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem('jadro-intro', '1');
+    } catch {
+      // sessionStorage nedostupný — intro se ukáže i po reloadu
+    }
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -698,7 +713,8 @@ export function App() {
             : base.packs,
       };
 
-      // dokončení celého sektoru kampaně → velká oslava
+      // dokončení sektoru kampaně → velká oslava. Spustí se buď při dohrání
+      // posledního levelu sektoru, nebo když se sektor právě celý zkompletuje.
       if (mode.kind === 'level') {
         const sector = Math.floor((id - 1) / CHAPTER_SIZE) + 1;
         const from = (sector - 1) * CHAPTER_SIZE + 1;
@@ -709,7 +725,8 @@ export function App() {
           if (!updated.completed.includes(lv)) allDone = false;
           if (!base.completed.includes(lv)) baseAll = false;
         }
-        if (allDone && !baseAll) sectorClearRef.current = sector;
+        const finishedFinale = id === to && !base.completed.includes(id);
+        if (finishedFinale || (allDone && !baseAll)) sectorClearRef.current = sector;
       }
     } else if (mode.kind === 'daily') {
       const today = isoDate(new Date());

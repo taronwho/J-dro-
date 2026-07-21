@@ -91,7 +91,8 @@ export function Menu({
   const { lang, setLang, t } = useI18n();
   const [showAchievements, setShowAchievements] = useState(false);
   const [showRanks, setShowRanks] = useState(false);
-  const [modesOpen, setModesOpen] = useState(false);
+  const [modesModalOpen, setModesModalOpen] = useState(false);
+  const [openPack, setOpenPack] = useState<PackId | null>(null);
   const [langOpen, setLangOpen] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [showAlbum, setShowAlbum] = useState(false);
@@ -339,117 +340,18 @@ export function Menu({
         </button>
       </div>
 
-      {/* rozbalovací sekce ostatních režimů a výzev */}
+      {/* spouštěč režimů a výzev — otevře modal, nerozhrne kampaň */}
       <button
         type="button"
-        className={modesOpen ? 'modes-toggle open' : 'modes-toggle'}
-        onClick={() => setModesOpen((o) => !o)}
+        className="modes-toggle"
+        onClick={() => {
+          setOpenPack(null);
+          setModesModalOpen(true);
+        }}
       >
         <Icon name="infinity" className="inline-icon c-magenta" /> {t('moreModes')}
-        <span className="modes-arrow">{modesOpen ? '▴' : '▾'}</span>
+        <span className="modes-arrow">▾</span>
       </button>
-
-      {modesOpen && (
-        <>
-          <div className="modes-row">
-            <button type="button" className="mode-btn" onClick={onEndless}>
-              <span className="mode-icon c-magenta">
-                <Icon name="infinity" />
-              </span>
-              <span className="mode-text">
-                <strong>{t('endlessTitle')}</strong>
-                <small>
-                  <Icon name="bolt" className="inline-icon c-cyan" />{' '}
-                  {progress.endless.total}
-                </small>
-              </span>
-            </button>
-            <button type="button" className="mode-btn" onClick={onBlackout}>
-              <span className="mode-icon c-dim">
-                <Icon name="moon" />
-              </span>
-              <span className="mode-text">
-                <strong>{t('blackoutTitle')}</strong>
-                <small>
-                  <Icon name="bolt" className="inline-icon c-cyan" />{' '}
-                  {progress.blackout.total}
-                </small>
-              </span>
-            </button>
-            <button type="button" className="mode-btn" onClick={onRush}>
-              <span className="mode-icon c-flame">
-                <Icon name="timer" />
-              </span>
-              <span className="mode-text">
-                <strong>{t('rushTitle')}</strong>
-                <small>
-                  <Icon name="trophy" className="inline-icon c-gold" />{' '}
-                  {progress.rush.best}
-                </small>
-              </span>
-            </button>
-          </div>
-
-          {PACKS.map((pack) => {
-            const meta = PACK_META[pack.id];
-            const unlockedIdx = progress.allUnlocked
-              ? pack.levels.length
-              : (progress.packs[pack.id] ?? 1);
-            const packStars = pack.levels.reduce(
-              (sum, { id }) => sum + (progress.best[id]?.stars ?? 0),
-              0,
-            );
-            return (
-              <section key={pack.id} className="chapter">
-                <header className="chapter-head">
-                  <h2>
-                    <button
-                      type="button"
-                      className={`pack-title ${meta.color}`}
-                      onClick={() => onHelp(meta.help)}
-                    >
-                      <Icon name={meta.icon} className="inline-icon" /> {t(meta.name)}
-                    </button>
-                  </h2>
-                  <span className="chapter-stars">
-                    <span className="star filled">
-                      <Icon name="star" />
-                    </span>{' '}
-                    {packStars} / {pack.levels.length * 3}
-                  </span>
-                </header>
-                <div className="level-grid pack-grid">
-                  {pack.levels.map(({ id }, k) => {
-                    const index = k + 1;
-                    const done = progress.completed.includes(id);
-                    const isUnlocked = index <= unlockedIdx;
-                    const cls = done
-                      ? 'level-btn done'
-                      : isUnlocked
-                        ? 'level-btn open'
-                        : 'level-btn';
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        className={cls}
-                        disabled={!isUnlocked}
-                        onClick={() => onSelectPack(pack.id, index)}
-                        aria-label={
-                          isUnlocked ? `${t(meta.name)} ${index}` : t('ariaLockedLevel')
-                        }
-                      >
-                        <span className="level-num">{index}</span>
-                        {done && <Stars count={progress.best[id]?.stars ?? 1} />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })}
-        </>
-      )}
 
       <h2 className="menu-section">{t('campaignTitle')}</h2>
       {Array.from({ length: CHAPTER_COUNT }, (_, c) => {
@@ -543,6 +445,201 @@ export function Menu({
       )}
       {showStats && (
         <StatsModal progress={progress} onClose={() => setShowStats(false)} />
+      )}
+
+      {modesModalOpen && (
+        <div
+          className="modal-backdrop"
+          onClick={() => {
+            setModesModalOpen(false);
+            setOpenPack(null);
+          }}
+        >
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            {openPack === null ? (
+              <>
+                <h2>
+                  <Icon name="infinity" className="c-magenta heading-icon" />{' '}
+                  {t('moreModes')}
+                </h2>
+                <div className="modes-modal-list">
+                  <button
+                    type="button"
+                    className="mode-btn"
+                    onClick={() => {
+                      setModesModalOpen(false);
+                      onEndless();
+                    }}
+                  >
+                    <span className="mode-icon c-magenta">
+                      <Icon name="infinity" />
+                    </span>
+                    <span className="mode-text">
+                      <strong>{t('endlessTitle')}</strong>
+                      <small>
+                        <Icon name="bolt" className="inline-icon c-cyan" />{' '}
+                        {progress.endless.total}
+                      </small>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="mode-btn"
+                    onClick={() => {
+                      setModesModalOpen(false);
+                      onBlackout();
+                    }}
+                  >
+                    <span className="mode-icon c-dim">
+                      <Icon name="moon" />
+                    </span>
+                    <span className="mode-text">
+                      <strong>{t('blackoutTitle')}</strong>
+                      <small>
+                        <Icon name="bolt" className="inline-icon c-cyan" />{' '}
+                        {progress.blackout.total}
+                      </small>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="mode-btn"
+                    onClick={() => {
+                      setModesModalOpen(false);
+                      onRush();
+                    }}
+                  >
+                    <span className="mode-icon c-flame">
+                      <Icon name="timer" />
+                    </span>
+                    <span className="mode-text">
+                      <strong>{t('rushTitle')}</strong>
+                      <small>
+                        <Icon name="trophy" className="inline-icon c-gold" />{' '}
+                        {progress.rush.best}
+                      </small>
+                    </span>
+                  </button>
+
+                  {PACKS.map((pack) => {
+                    const meta = PACK_META[pack.id];
+                    const packStars = pack.levels.reduce(
+                      (sum, { id }) => sum + (progress.best[id]?.stars ?? 0),
+                      0,
+                    );
+                    return (
+                      <button
+                        key={pack.id}
+                        type="button"
+                        className="mode-btn"
+                        onClick={() => setOpenPack(pack.id)}
+                      >
+                        <span className={`mode-icon ${meta.color}`}>
+                          <Icon name={meta.icon} />
+                        </span>
+                        <span className="mode-text">
+                          <strong>{t(meta.name)}</strong>
+                          <small>
+                            <Icon name="star" className="inline-icon c-gold" />{' '}
+                            {packStars} / {pack.levels.length * 3}
+                          </small>
+                        </span>
+                        <span className="mode-go" aria-hidden="true">
+                          ›
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setModesModalOpen(false)}
+                >
+                  {t('close')}
+                </button>
+              </>
+            ) : (
+              (() => {
+                const pack = PACKS.find((p) => p.id === openPack);
+                const meta = PACK_META[openPack];
+                if (pack === undefined) return null;
+                const unlockedIdx = progress.allUnlocked
+                  ? pack.levels.length
+                  : (progress.packs[openPack] ?? 1);
+                return (
+                  <>
+                    <div className="modal-head">
+                      <button
+                        type="button"
+                        className="btn icon-btn"
+                        onClick={() => setOpenPack(null)}
+                        aria-label={t('back')}
+                      >
+                        <Icon name="back" />
+                      </button>
+                      <h2 className="modal-head-title">
+                        <Icon name={meta.icon} className={`${meta.color} heading-icon`} />{' '}
+                        {t(meta.name)}
+                      </h2>
+                      <button
+                        type="button"
+                        className="btn icon-btn"
+                        onClick={() => onHelp(meta.help)}
+                        aria-label={t('helpTitle')}
+                      >
+                        <Icon name="help" />
+                      </button>
+                    </div>
+                    <div className="level-grid pack-grid">
+                      {pack.levels.map(({ id }, k) => {
+                        const index = k + 1;
+                        const done = progress.completed.includes(id);
+                        const isUnlocked = index <= unlockedIdx;
+                        const cls = done
+                          ? 'level-btn done'
+                          : isUnlocked
+                            ? 'level-btn open'
+                            : 'level-btn';
+                        return (
+                          <button
+                            key={id}
+                            type="button"
+                            className={cls}
+                            disabled={!isUnlocked}
+                            onClick={() => {
+                              setModesModalOpen(false);
+                              setOpenPack(null);
+                              onSelectPack(pack.id, index);
+                            }}
+                            aria-label={
+                              isUnlocked
+                                ? `${t(meta.name)} ${index}`
+                                : t('ariaLockedLevel')
+                            }
+                          >
+                            <span className="level-num">{index}</span>
+                            {done && <Stars count={progress.best[id]?.stars ?? 1} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => {
+                        setModesModalOpen(false);
+                        setOpenPack(null);
+                      }}
+                    >
+                      {t('close')}
+                    </button>
+                  </>
+                );
+              })()
+            )}
+          </div>
+        </div>
       )}
 
       {showRanks && (
