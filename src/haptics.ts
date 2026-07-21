@@ -17,6 +17,15 @@ export function isHapticsEnabled(): boolean {
   return enabled;
 }
 
+// Vibration API chybí např. v iOS Safari — tam vibrace fungovat nemohou.
+export function isHapticsSupported(): boolean {
+  try {
+    return typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
+  } catch {
+    return false;
+  }
+}
+
 export function setHapticsEnabled(value: boolean): void {
   enabled = value;
   try {
@@ -37,23 +46,29 @@ function buzz(pattern: number | number[]): void {
   }
 }
 
+// Krátké vibrace (<20 ms) motor telefonu často nestihne roztočit, takže
+// nejsou cítit — proto delší, jasně hmatatelné pulzy.
 export const haptic = {
   rotate(): void {
-    buzz(8);
+    buzz(22);
   },
   connect(): void {
-    buzz(14);
+    buzz(35);
   },
   win(): void {
-    buzz([0, 30, 40, 60]);
+    buzz([0, 45, 55, 45, 55, 90]);
   },
   fail(): void {
-    buzz([0, 60, 30, 60]);
+    buzz([0, 90, 50, 90]);
   },
   melt(): void {
-    buzz(18);
+    buzz(30);
   },
   undo(): void {
-    buzz(10);
+    buzz(25);
+  },
+  // zřetelné potvrzení při zapnutí vibrací v nastavení
+  test(): void {
+    buzz([0, 40, 60, 40]);
   },
 };

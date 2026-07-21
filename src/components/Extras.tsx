@@ -1,4 +1,5 @@
 import { useI18n } from '../i18n/i18n';
+import { isHapticsSupported } from '../haptics';
 import { LEVELS, PACK_LEVEL_TOTAL } from '../levels/levels';
 import { ACHIEVEMENTS } from '../meta/achievements';
 import { COLLECTIBLES, COLLECTION_SETS, setItems } from '../meta/collection';
@@ -282,12 +283,14 @@ export function SettingsModal({
   onClose: () => void;
 }) {
   const { t } = useI18n();
+  const hapticsSupported = isHapticsSupported();
   const rows: {
     icon: IconName;
     label: string;
     desc: string;
     on: boolean;
     toggle: () => void;
+    disabled?: boolean;
   }[] = [
     {
       icon: soundOn ? 'sound' : 'soundOff',
@@ -299,9 +302,10 @@ export function SettingsModal({
     {
       icon: 'vibrate',
       label: t('setHaptics'),
-      desc: t('setHapticsDesc'),
-      on: hapticsOn,
+      desc: hapticsSupported ? t('setHapticsDesc') : t('setHapticsUnsupported'),
+      on: hapticsOn && hapticsSupported,
       toggle: onHapticsToggle,
+      disabled: !hapticsSupported,
     },
     {
       icon: 'bolt',
@@ -320,7 +324,12 @@ export function SettingsModal({
         <ul className="settings-list">
           {rows.map((r) => (
             <li key={r.label}>
-              <button type="button" className="settings-row" onClick={r.toggle}>
+              <button
+                type="button"
+                className="settings-row"
+                onClick={r.toggle}
+                disabled={r.disabled}
+              >
                 <span className="settings-ic">
                   <Icon name={r.icon} />
                 </span>

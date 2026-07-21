@@ -17,10 +17,11 @@ import { Board } from './Board';
 import { Help, type HelpSection } from './Help';
 import { HUD } from './HUD';
 import { Intro } from './Intro';
+import { MapJourney } from './MapJourney';
 import { Menu } from './Menu';
 import { SectorClear } from './SectorClear';
 
-type Screen = 'menu' | 'game' | 'victory' | 'sector';
+type Screen = 'menu' | 'game' | 'victory' | 'sector' | 'journey';
 
 export type Mode =
   | { kind: 'level'; id: number }
@@ -468,7 +469,13 @@ export function App() {
     if (game !== null) startConfig(game.config, mode);
   };
 
-  // po oslavě sektoru: pokračuj prvním levelem dalšího sektoru, jinak do menu
+  // po oslavě sektoru: nejdřív cinematika posunu po mapě, pak další level
+  const afterSector = (): void => {
+    if (sectorNum * CHAPTER_SIZE + 1 <= LEVEL_COUNT) setScreen('journey');
+    else goMenu();
+  };
+
+  // po cinematice mapy: pokračuj prvním levelem dalšího sektoru
   const continueAfterSector = (): void => {
     const nextId = sectorNum * CHAPTER_SIZE + 1;
     if (nextId <= LEVEL_COUNT) startLevel(nextId);
@@ -527,7 +534,7 @@ export function App() {
     const next = !hapticsOn;
     setHapticsOn(next);
     setHapticsEnabled(next);
-    if (next) haptic.connect();
+    if (next) haptic.test();
   };
 
   const toggleMotion = (): void => {
@@ -991,6 +998,16 @@ export function App() {
         maxStars={(secTo - secFrom + 1) * 3}
         reducedMotion={reducedMotion}
         hasNext={sectorNum * CHAPTER_SIZE + 1 <= LEVEL_COUNT}
+        onContinue={afterSector}
+        onMenu={goMenu}
+      />
+    );
+  } else if (screen === 'journey') {
+    content = (
+      <MapJourney
+        fromSector={sectorNum}
+        toSector={sectorNum + 1}
+        reducedMotion={reducedMotion}
         onContinue={continueAfterSector}
         onMenu={goMenu}
       />

@@ -296,6 +296,11 @@ const STRINGS = {
     en: 'Subtle phone feedback on rotate and connect.',
     de: 'Dezentes Feedback des Telefons beim Drehen und Verbinden.',
   },
+  setHapticsUnsupported: {
+    cs: 'Toto zařízení / prohlížeč vibrace nepodporuje (např. iPhone).',
+    en: 'This device / browser does not support vibration (e.g. iPhone).',
+    de: 'Dieses Gerät / dieser Browser unterstützt keine Vibration (z. B. iPhone).',
+  },
   setMotion: { cs: 'Omezit animace', en: 'Reduce motion', de: 'Animationen reduzieren' },
   setMotionDesc: {
     cs: 'Vypne rozliv světla a další efekty. Šetrnější k oku i baterii.',
