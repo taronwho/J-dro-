@@ -17,7 +17,7 @@ import { Board } from './Board';
 import { Help, type HelpSection } from './Help';
 import { HUD } from './HUD';
 import { Intro } from './Intro';
-import { MapJourney } from './MapJourney';
+import { MapView } from './MapView';
 import { Menu } from './Menu';
 import { SectorClear } from './SectorClear';
 
@@ -1004,12 +1004,16 @@ export function App() {
     );
   } else if (screen === 'journey') {
     content = (
-      <MapJourney
-        fromSector={sectorNum}
-        toSector={sectorNum + 1}
+      <MapView
+        progress={progress}
+        onSelect={startLevel}
+        onClose={goMenu}
+        journey={{
+          from: sectorNum,
+          to: sectorNum + 1,
+          onContinue: continueAfterSector,
+        }}
         reducedMotion={reducedMotion}
-        onContinue={continueAfterSector}
-        onMenu={goMenu}
       />
     );
   } else if (screen === 'menu' || game === null) {

@@ -14,6 +14,9 @@ interface MapViewProps {
   progress: Progress;
   onSelect: (id: number) => void;
   onClose: () => void;
+  // cinematický režim po dokončení sektoru: hráč sklouzne z „from" do „to"
+  journey?: { from: number; to: number; onContinue: () => void } | null;
+  reducedMotion?: boolean;
 }
 
 function sectorStars(progress: Progress, sector: number): number {
@@ -37,7 +40,13 @@ function routeSegment(x1: number, y1: number, x2: number, y2: number): string {
   return `M ${x1} ${y1} C ${x1} ${y1 - bend}, ${x2} ${y2 + bend}, ${x2} ${y2}`;
 }
 
-export function MapView({ progress, onSelect, onClose }: MapViewProps) {
+export function MapView({
+  progress,
+  onSelect,
+  onClose,
+  journey = null,
+  reducedMotion = false,
+}: MapViewProps) {
   const { lang, t } = useI18n();
   const [selected, setSelected] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -53,14 +62,21 @@ export function MapView({ progress, onSelect, onClose }: MapViewProps) {
   // aktuální sektor: první odemčený nedokončený
   const currentIdx = complete.findIndex((c, i) => !c && unlockedSector[i]);
 
-  // po otevření sjeď na aktuální sektor
+  // po otevření sjeď na aktuální sektor (nebo na cestu v cinematickém režimu)
   useEffect(() => {
     const el = scrollRef.current;
     if (el === null) return;
-    const idx = currentIdx === -1 ? SECTOR_STORIES.length - 1 : currentIdx;
-    const y = SECTOR_STORIES[idx].y / 220;
-    el.scrollTop = Math.max(0, y * el.scrollHeight - el.clientHeight * 0.55);
-  }, [currentIdx]);
+    let y: number;
+    if (journey !== null) {
+      const a = SECTOR_STORIES[journey.from - 1];
+      const b = SECTOR_STORIES[journey.to - 1];
+      y = a && b ? (a.y + b.y) / 2 / 220 : 0.5;
+    } else {
+      const idx = currentIdx === -1 ? SECTOR_STORIES.length - 1 : currentIdx;
+      y = SECTOR_STORIES[idx].y / 220;
+    }
+    el.scrollTop = Math.max(0, y * el.scrollHeight - el.clientHeight * 0.5);
+  }, [currentIdx, journey]);
 
   const sel = selected === null ? null : SECTOR_STORIES[selected];
 
@@ -259,7 +275,7 @@ export function MapView({ progress, onSelect, onClose }: MapViewProps) {
               <g
                 key={s.sector}
                 className={unlocked ? 'k-node-g' : 'k-node-g locked'}
-                onClick={() => unlocked && setSelected(i)}
+                onClick={() => journey === null && unlocked && setSelected(i)}
               >
                 {isCurrent && <circle cx={s.x} cy={s.y} r="8.5" className="k-halo" />}
                 <circle cx={s.x} cy={s.y} r="6.4" className="k-node-bg" />
@@ -290,10 +306,47 @@ export function MapView({ progress, onSelect, onClose }: MapViewProps) {
               </g>
             );
           })}
+
+          {/* ---- Cinematika: jádro-hráč klouže po trase k dalšímu sektoru ---- */}
+          {journey !== null &&
+            (() => {
+              const a = SECTOR_STORIES[journey.from - 1];
+              const b = SECTOR_STORIES[journey.to - 1];
+              if (a === undefined || b === undefined) return null;
+              const d = routeSegment(a.x, a.y, b.x, b.y);
+              return (
+                <g>
+                  <path
+                    d={d}
+                    className={reducedMotion ? 'k-journey-route done' : 'k-journey-route'}
+                    pathLength={100}
+                  />
+                  {reducedMotion ? (
+                    <circle cx={b.x} cy={b.y} r="2.8" className="k-journey-dot" />
+                  ) : (
+                    <g className="k-journey-marker">
+                      <circle r="2.8" />
+                      <animateMotion dur="1.9s" begin="0.2s" fill="freeze" path={d} />
+                    </g>
+                  )}
+                </g>
+              );
+            })()}
         </svg>
 
-        <p className="mapview-intro">{STORY_INTRO[lang]}</p>
+        {journey === null && <p className="mapview-intro">{STORY_INTRO[lang]}</p>}
       </div>
+
+      {journey !== null && (
+        <div className="mapview-journey-bar">
+          <button type="button" className="btn primary" onClick={journey.onContinue}>
+            {t('continue')}
+          </button>
+          <button type="button" className="btn" onClick={onClose}>
+            {t('menu')}
+          </button>
+        </div>
+      )}
 
       {/* panel vybraného sektoru */}
       {sel !== null && selected !== null && (
