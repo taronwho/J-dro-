@@ -3,7 +3,7 @@ import { generateLevel, rotateCw } from '../engine/generator';
 import { applyMelt, checkWin, computeFlow } from '../engine/solver';
 import type { GameState, LevelConfig, Tile } from '../engine/types';
 import { detectLang, I18nContext, makeT, persistLang, type Lang } from '../i18n/i18n';
-import { LEVELS, LEVEL_COUNT, PACKS, type PackId } from '../levels/levels';
+import { CHAPTER_SIZE, LEVELS, LEVEL_COUNT, PACKS, type PackId } from '../levels/levels';
 import { newlyUnlocked, totalStars, type AchievementDef } from '../meta/achievements';
 import { collectibleForLevel, COLLECTION_SETS, setItems } from '../meta/collection';
 import { EVENT_REWARD_HINTS, isWeekend, weekendEvent } from '../meta/events';
@@ -16,9 +16,11 @@ import { loadReducedMotion, persistReducedMotion } from '../motion';
 import { Board } from './Board';
 import { Help, type HelpSection } from './Help';
 import { HUD } from './HUD';
+import { Intro } from './Intro';
 import { Menu } from './Menu';
+import { SectorClear } from './SectorClear';
 
-type Screen = 'menu' | 'game' | 'victory';
+type Screen = 'menu' | 'game' | 'victory' | 'sector';
 
 export type Mode =
   | { kind: 'level'; id: number }
@@ -330,6 +332,9 @@ export function App() {
   const [rush, setRush] = useState<RushState>({ score: 0, timeLeft: RUSH_START_SECONDS });
   const [rushOver, setRushOver] = useState<RushOver | null>(null);
   const [lang, setLangState] = useState<Lang>(detectLang);
+  const [showIntro, setShowIntro] = useState(true);
+  const [sectorNum, setSectorNum] = useState(1); // číslo dokončeného sektoru pro oslavu
+  const sectorClearRef = useRef<number | null>(null);
   const waveTimer = useRef<number | null>(null);
   const menuScroll = useRef(0); // pozice scrollu menu pro návrat zpět
   // historie tahů pro krok zpět: snapshoty stavu před posledními tahy
@@ -446,6 +451,13 @@ export function App() {
   };
   const restart = (): void => {
     if (game !== null) startConfig(game.config, mode);
+  };
+
+  // po oslavě sektoru: pokračuj prvním levelem dalšího sektoru, jinak do menu
+  const continueAfterSector = (): void => {
+    const nextId = sectorNum * CHAPTER_SIZE + 1;
+    if (nextId <= LEVEL_COUNT) startLevel(nextId);
+    else goMenu();
   };
 
   // krok zpět: vrátí poslední tah (i po vyčerpání limitu) z omezené zásoby
@@ -605,6 +617,7 @@ export function App() {
   const handleWin = (next: GameState, usedHint: boolean, base: Progress): void => {
     const rawStars = starsFor(next.moves, next.par);
     const stars = usedHint ? Math.min(rawStars, 2) : rawStars;
+    sectorClearRef.current = null;
 
     let updated: Progress;
     let newRecord = false;
@@ -684,6 +697,20 @@ export function App() {
               }
             : base.packs,
       };
+
+      // dokončení celého sektoru kampaně → velká oslava
+      if (mode.kind === 'level') {
+        const sector = Math.floor((id - 1) / CHAPTER_SIZE) + 1;
+        const from = (sector - 1) * CHAPTER_SIZE + 1;
+        const to = Math.min(sector * CHAPTER_SIZE, LEVEL_COUNT);
+        let allDone = true;
+        let baseAll = true;
+        for (let lv = from; lv <= to; lv++) {
+          if (!updated.completed.includes(lv)) allDone = false;
+          if (!base.completed.includes(lv)) baseAll = false;
+        }
+        if (allDone && !baseAll) sectorClearRef.current = sector;
+      }
     } else if (mode.kind === 'daily') {
       const today = isoDate(new Date());
       const yesterday = isoDate(new Date(Date.now() - 86400000));
@@ -847,8 +874,14 @@ export function App() {
         }, maxDist * 40 + 500);
       } else {
         handleWin(next, usedHint, baseProgress);
+        const cleared = sectorClearRef.current;
         waveTimer.current = window.setTimeout(() => {
-          setScreen('victory');
+          if (cleared !== null) {
+            setSectorNum(cleared);
+            setScreen('sector');
+          } else {
+            setScreen('victory');
+          }
         }, maxDist * 40 + 600);
       }
     } else {
@@ -925,7 +958,25 @@ export function App() {
   };
 
   let content;
-  if (screen === 'menu' || game === null) {
+  if (screen === 'sector') {
+    const secFrom = (sectorNum - 1) * CHAPTER_SIZE + 1;
+    const secTo = Math.min(sectorNum * CHAPTER_SIZE, LEVEL_COUNT);
+    let secStars = 0;
+    for (let lv = secFrom; lv <= secTo; lv++) {
+      secStars += progress.best[lv]?.stars ?? 0;
+    }
+    content = (
+      <SectorClear
+        sector={sectorNum}
+        stars={secStars}
+        maxStars={(secTo - secFrom + 1) * 3}
+        reducedMotion={reducedMotion}
+        hasNext={sectorNum * CHAPTER_SIZE + 1 <= LEVEL_COUNT}
+        onContinue={continueAfterSector}
+        onMenu={goMenu}
+      />
+    );
+  } else if (screen === 'menu' || game === null) {
     content = (
       <Menu
         progress={progress}
@@ -1078,6 +1129,9 @@ export function App() {
       {content}
       {showHelp && <Help highlight={helpSection} onClose={() => setShowHelp(false)} />}
       {shareToast && <div className="toast">{i18n.t('shareCopied')}</div>}
+      {showIntro && (
+        <Intro reducedMotion={reducedMotion} onDone={() => setShowIntro(false)} />
+      )}
     </I18nContext.Provider>
   );
 }

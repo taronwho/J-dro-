@@ -2535,6 +2535,436 @@ button.cal-day.playable:hover {
   line-height: 1.45;
 }
 
+/* ---------- Spouštěcí obrazovka (intro) ---------- */
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 42%, #0d1626 0%, #06070d 72%);
+  opacity: 1;
+  transition: opacity 0.45s ease;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.intro.leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.intro-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.intro-svg {
+  width: min(62vw, 250px);
+  height: auto;
+  overflow: visible;
+}
+
+.intro-pipe {
+  stroke: var(--core-0);
+  stroke-width: 5;
+  stroke-linecap: round;
+  fill: none;
+  stroke-dashoffset: 100;
+  opacity: 0;
+  filter: drop-shadow(0 0 4px var(--core-0));
+  animation: intro-charge 0.6s ease forwards;
+}
+
+@keyframes intro-charge {
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+.intro-node {
+  fill: var(--core-0);
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  filter: drop-shadow(0 0 5px var(--core-0));
+  animation: intro-node 0.5s ease forwards;
+}
+
+@keyframes intro-node {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.intro-ring {
+  fill: none;
+  stroke: var(--core-0);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: intro-ring 1.9s ease-out 0.4s infinite;
+}
+
+.intro-ring.d2 {
+  animation-delay: 1.15s;
+}
+
+@keyframes intro-ring {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+
+.intro-halo {
+  fill: none;
+  stroke: var(--core-2);
+  stroke-width: 2;
+  stroke-dasharray: 5 6;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation:
+    intro-halo-in 0.6s ease 0.7s forwards,
+    intro-spin 7s linear 0.7s infinite;
+}
+
+@keyframes intro-halo-in {
+  to {
+    opacity: 0.8;
+  }
+}
+
+@keyframes intro-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.intro-hex {
+  fill: none;
+  stroke: var(--core-0);
+  stroke-width: 4;
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  filter: drop-shadow(0 0 8px var(--core-0));
+  animation: intro-core-in 0.7s cubic-bezier(0.2, 0.8, 0.3, 1.3) 0.5s forwards;
+}
+
+@keyframes intro-core-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.2) rotate(-40deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+.intro-spark {
+  fill: var(--core-0);
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  filter: drop-shadow(0 0 10px var(--core-0));
+  animation:
+    intro-spark-in 0.6s ease 0.8s forwards,
+    intro-spark-pulse 1.4s ease-in-out 1.4s infinite;
+}
+
+@keyframes intro-spark-in {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes intro-spark-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+}
+
+.intro-word {
+  display: flex;
+  gap: 0.06em;
+  margin-top: 1.5rem;
+  font-size: clamp(2.6rem, 13vw, 4.2rem);
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-indent: 0.16em;
+  color: var(--core-0);
+}
+
+.intro-word span {
+  opacity: 0;
+  transform: translateY(12px);
+  filter: blur(6px);
+  text-shadow:
+    0 0 20px rgba(34, 224, 255, 0.7),
+    0 0 55px rgba(34, 224, 255, 0.3);
+  animation: intro-letter 0.55s ease forwards;
+}
+
+@keyframes intro-letter {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.intro-tagline {
+  margin: 0.8rem 0 0;
+  max-width: 80vw;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  opacity: 0;
+  animation: intro-fade-up 0.6s ease 1.55s forwards;
+}
+
+@keyframes intro-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.intro-skip {
+  position: absolute;
+  bottom: 26px;
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  opacity: 0;
+  animation: intro-fade-up 0.6s ease 1.95s forwards;
+}
+
+/* ---------- Dokončení sektoru (oslava) ---------- */
+
+.sector-clear {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.4rem;
+  background: radial-gradient(circle at 50% 40%, #15131f 0%, #06060c 72%);
+  overflow: hidden;
+}
+
+.sc-glow {
+  position: absolute;
+  width: 120vmax;
+  height: 120vmax;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 209, 102, 0.18) 0%,
+    rgba(255, 209, 102, 0) 55%
+  );
+  animation: sc-glow-pulse 2.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes sc-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+.sc-rays {
+  position: absolute;
+  width: 150vmax;
+  height: 150vmax;
+  pointer-events: none;
+  opacity: 0.45;
+}
+
+.sc-rays line {
+  stroke: var(--gold);
+  stroke-width: 2;
+}
+
+.sc-rays-spin {
+  transform-box: fill-box;
+  transform-origin: 200px 200px;
+  animation: intro-spin 24s linear infinite;
+}
+
+.sc-sparks {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.sc-spark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  animation: sc-fly var(--t) ease-out var(--d) infinite;
+}
+
+@keyframes sc-fly {
+  0% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1);
+    opacity: 0;
+  }
+}
+
+.sc-emblem {
+  position: relative;
+  width: min(38vw, 148px);
+  margin-bottom: 1.1rem;
+  animation: sc-pop 0.7s cubic-bezier(0.2, 0.8, 0.3, 1.4) both;
+}
+
+@keyframes sc-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-25deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+.sc-emblem svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  filter: drop-shadow(0 0 22px rgba(255, 209, 102, 0.55));
+}
+
+.sc-hex-ring {
+  fill: none;
+  stroke: #fff7d6;
+  stroke-width: 3;
+  stroke-dashoffset: 100;
+  animation: intro-charge 1.1s ease 0.5s forwards;
+}
+
+.sc-trophy {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3a2a06;
+}
+
+.sc-trophy .icon {
+  width: 46%;
+  height: 46%;
+}
+
+.sc-kicker {
+  margin: 0;
+  letter-spacing: 0.34em;
+  text-indent: 0.34em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--gold);
+  animation: intro-fade-up 0.5s ease 0.3s both;
+}
+
+.sc-title {
+  margin: 0.2rem 0 0.1rem;
+  font-size: clamp(2rem, 9vw, 3rem);
+  letter-spacing: 0.1em;
+  color: var(--text);
+  text-shadow: 0 0 22px rgba(255, 209, 102, 0.4);
+  animation: sc-pop 0.6s cubic-bezier(0.2, 0.8, 0.3, 1.3) 0.35s both;
+}
+
+.sc-stars {
+  margin: 0.1rem 0;
+  color: var(--gold);
+  font-size: 0.95rem;
+  animation: intro-fade-up 0.5s ease 0.55s both;
+}
+
+.sc-text {
+  margin: 0.5rem 0 1.4rem;
+  max-width: 22rem;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  animation: intro-fade-up 0.5s ease 0.7s both;
+}
+
+.sc-buttons {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  animation: intro-fade-up 0.5s ease 0.85s both;
+}
+
 /* ---------- Omezit animace ---------- */
 /* Uživatelské nastavení (data-motion) i systémová preference vypnou rozliv
    světla a všechny ostatní efekty — zůstává jen statické zobrazení stavu. */

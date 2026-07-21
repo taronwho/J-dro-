@@ -329,6 +329,30 @@ const STRINGS = {
     en: 'Tap a day to replay its challenge (practice only, no rewards).',
     de: 'Tippe einen Tag, um seine Challenge zu üben (nur Training, keine Belohnung).',
   },
+  // Spouštěcí obrazovka
+  introSkip: {
+    cs: 'Klepni pro přeskočení',
+    en: 'Tap to skip',
+    de: 'Zum Überspringen tippen',
+  },
+  // Dokončení sektoru
+  continue: { cs: 'Pokračovat', en: 'Continue', de: 'Weiter' },
+  celebrate: { cs: 'Oslavit!', en: 'Celebrate!', de: 'Feiern!' },
+  sectorClearKicker: {
+    cs: 'SEKTOR DOKONČEN',
+    en: 'SECTOR COMPLETE',
+    de: 'SEKTOR ABGESCHLOSSEN',
+  },
+  sectorClearText: {
+    cs: 'Energie teď proudí celým sektorem — Kora zase o kus ožila. Vzhůru do dalšího!',
+    en: 'Energy now flows through the whole sector — Kora comes a little more alive. On to the next!',
+    de: 'Energie fließt jetzt durch den ganzen Sektor — Kora erwacht ein Stück mehr. Auf zum nächsten!',
+  },
+  sectorStarsLine: {
+    cs: '{x} / {y} hvězd v sektoru',
+    en: '{x} / {y} stars in the sector',
+    de: '{x} / {y} Sterne im Sektor',
+  },
   ariaCore: { cs: 'Jádro', en: 'Core', de: 'Kern' },
   ariaLocked: { cs: 'Zamčená dlaždice', en: 'Locked tile', de: 'Gesperrte Kachel' },
   ariaTile: { cs: 'Dlaždice', en: 'Tile', de: 'Kachel' },
