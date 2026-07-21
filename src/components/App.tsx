@@ -725,7 +725,9 @@ export function App() {
           if (!updated.completed.includes(lv)) allDone = false;
           if (!base.completed.includes(lv)) baseAll = false;
         }
-        const finishedFinale = id === to && !base.completed.includes(id);
+        // finále sektoru (poslední level) oslavíme vždy, i při opětovném dohrání;
+        // stejně tak když se sektor právě celý zkompletuje mimo pořadí
+        const finishedFinale = id === to;
         if (finishedFinale || (allDone && !baseAll)) sectorClearRef.current = sector;
       }
     } else if (mode.kind === 'daily') {
