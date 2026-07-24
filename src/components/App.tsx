@@ -936,6 +936,10 @@ export function App() {
     const tiles = game.tiles.slice();
     tiles[index] = { ...tile, mask: tile.solutionMask, locked: true };
 
+    // nápovědu nelze vrátit krokem zpět — jinak by se zaplacená nápověda
+    // ztratila (undo by obnovil stav před ní)
+    undoStack.current = [];
+
     let baseProgress = progress;
     if (!alreadyCorrect) {
       setHintUsed(true);
