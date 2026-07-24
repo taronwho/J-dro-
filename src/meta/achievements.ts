@@ -27,6 +27,12 @@ export function totalStars(p: AchievementProgress): number {
   return Object.values(p.best).reduce((sum, b) => sum + b.stars, 0);
 }
 
+// dokončil hráč aspoň jeden level daného balíčku výzev?
+function packPlayed(p: AchievementProgress, packId: string): boolean {
+  const pack = PACKS.find((pk) => pk.id === packId);
+  return pack !== undefined && pack.levels.some((l) => p.completed.includes(l.id));
+}
+
 export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'first-step',
@@ -305,6 +311,52 @@ export const ACHIEVEMENTS: AchievementDef[] = [
       de: 'Schließe ein ganzes Wochenend-Event ab.',
     },
     check: (p) => p.eventsDone >= 1,
+  },
+  {
+    id: 'all-campaign',
+    reward: 5,
+    name: { cs: 'Celá Kora', en: 'All of Kora', de: 'Ganz Kora' },
+    desc: {
+      cs: 'Dokonči všech 120 levelů kampaně.',
+      en: 'Complete all 120 campaign levels.',
+      de: 'Schließe alle 120 Kampagnen-Level ab.',
+    },
+    check: (p, levels) => levels.every((l) => p.completed.includes(l.id)),
+  },
+  {
+    id: 'stars-500',
+    reward: 5,
+    name: { cs: 'Galaxie', en: 'Galaxy', de: 'Galaxie' },
+    desc: {
+      cs: 'Nasbírej 500 hvězd.',
+      en: 'Collect 500 stars.',
+      de: 'Sammle 500 Sterne.',
+    },
+    check: (p) => totalStars(p) >= 500,
+  },
+  {
+    id: 'wall-first',
+    reward: 1,
+    name: { cs: 'Bludištěm', en: 'Through the maze', de: 'Durchs Labyrinth' },
+    desc: {
+      cs: 'Dokonči level se zdmi mezi dlaždicemi.',
+      en: 'Complete a level with walls between tiles.',
+      de: 'Schließe ein Level mit Wänden zwischen Kacheln ab.',
+    },
+    check: (p, levels) =>
+      p.completed.some((id) => (levels[id - 1]?.wallCount ?? 0) > 0) ||
+      packPlayed(p, 'maze'),
+  },
+  {
+    id: 'portal-first',
+    reward: 1,
+    name: { cs: 'Skrz vír', en: 'Through the vortex', de: 'Durch den Wirbel' },
+    desc: {
+      cs: 'Dokonči level s portály.',
+      en: 'Complete a level with portals.',
+      de: 'Schließe ein Level mit Portalen ab.',
+    },
+    check: (p) => packPlayed(p, 'portals'),
   },
   {
     id: 'specialist',

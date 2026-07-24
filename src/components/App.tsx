@@ -13,6 +13,7 @@ import { dailyShareText, rushShareText, shareText } from '../share';
 import { isSoundEnabled, setSoundEnabled, sfx } from '../sound';
 import { haptic, isHapticsEnabled, setHapticsEnabled } from '../haptics';
 import { loadReducedMotion, persistReducedMotion } from '../motion';
+import { BackContext, useBackLayerWith, useBackStack } from './backstack';
 import { Board } from './Board';
 import { Help, type HelpSection } from './Help';
 import { HUD } from './HUD';
@@ -330,6 +331,8 @@ export function App() {
   const [tutorialStep, setTutorialStep] = useState(0); // 0 = otoč dlaždici, 1 = propoj vše
   const [theme, setTheme] = useState<string>(loadTheme);
   const [shareToast, setShareToast] = useState(false);
+  const [exitToast, setExitToast] = useState(false);
+  const exitAt = useRef(0);
   const [rush, setRush] = useState<RushState>({ score: 0, timeLeft: RUSH_START_SECONDS });
   const [rushOver, setRushOver] = useState<RushOver | null>(null);
   const [lang, setLangState] = useState<Lang>(detectLang);
@@ -348,6 +351,19 @@ export function App() {
   // historie tahů pro krok zpět: snapshoty stavu před posledními tahy
   const undoStack = useRef<{ tiles: Tile[]; moves: number; rotations: number[] }[]>([]);
   const [undosLeft, setUndosLeft] = useState(UNDO_PER_LEVEL);
+
+  // Hardwarové tlačítko Zpět: zavírá vrstvy, na hlavní obrazovce se ptá
+  // podruhé (jinak by gesto zpět rovnou ukončilo hru).
+  const backApi = useBackStack({
+    onExitAttempt: () => {
+      const now = Date.now();
+      if (now - exitAt.current < 2500) return false; // druhé stisknutí → ven
+      exitAt.current = now;
+      setExitToast(true);
+      window.setTimeout(() => setExitToast(false), 2200);
+      return true;
+    },
+  });
 
   // návrat do menu obnoví původní pozici scrollu
   useEffect(() => {
@@ -523,6 +539,10 @@ export function App() {
     menuScroll.current = 0;
     goBack();
   };
+
+  // vše mimo hlavní obrazovku je vrstva → Zpět vrací do menu, ne ven ze hry
+  useBackLayerWith(backApi, screen !== 'menu', goBack);
+  useBackLayerWith(backApi, showHelp, () => setShowHelp(false));
 
   const toggleSound = (): void => {
     const next = !soundOn;
@@ -1119,7 +1139,9 @@ export function App() {
           text: tutorialStep === 0 ? i18n.t('tutorialTap') : i18n.t('tutorialConnect'),
         }
       : null;
+    // v Bleskové hře krok zpět nedává smysl (žádný limit tahů) a kazil by režim
     const canUndo =
+      mode.kind !== 'rush' &&
       undosLeft > 0 &&
       undoStack.current.length > 0 &&
       !game.won &&
@@ -1170,12 +1192,15 @@ export function App() {
 
   return (
     <I18nContext.Provider value={i18n}>
-      {content}
-      {showHelp && <Help highlight={helpSection} onClose={() => setShowHelp(false)} />}
-      {shareToast && <div className="toast">{i18n.t('shareCopied')}</div>}
-      {showIntro && (
-        <Intro reducedMotion={reducedMotion} onDone={() => setShowIntro(false)} />
-      )}
+      <BackContext.Provider value={backApi}>
+        {content}
+        {showHelp && <Help highlight={helpSection} onClose={() => setShowHelp(false)} />}
+        {shareToast && <div className="toast">{i18n.t('shareCopied')}</div>}
+        {exitToast && <div className="toast">{i18n.t('exitConfirm')}</div>}
+        {showIntro && (
+          <Intro reducedMotion={reducedMotion} onDone={() => setShowIntro(false)} />
+        )}
+      </BackContext.Provider>
     </I18nContext.Provider>
   );
 }

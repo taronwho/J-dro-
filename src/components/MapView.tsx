@@ -3,6 +3,7 @@ import { useI18n } from '../i18n/i18n';
 import { CHAPTER_SIZE, LEVELS } from '../levels/levels';
 import { SECTOR_STORIES, STORY_INTRO } from '../meta/story';
 import type { Progress } from './App';
+import { useBackLayer } from './backstack';
 import { Icon } from './Icon';
 
 // ---------- Celoobrazovková kampaňová mapa planety Kora ----------
@@ -77,6 +78,9 @@ export function MapView({
     }
     el.scrollTop = Math.max(0, y * el.scrollHeight - el.clientHeight * 0.5);
   }, [currentIdx, journey]);
+
+  // Zpět zavře panel sektoru dřív, než celou mapu
+  useBackLayer(selected !== null, () => setSelected(null));
 
   const sel = selected === null ? null : SECTOR_STORIES[selected];
 

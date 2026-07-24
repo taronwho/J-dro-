@@ -549,6 +549,62 @@ button:disabled {
   opacity: 1;
 }
 
+/* hlavní akce menu — nejvýraznější prvek na obrazovce */
+.play-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  width: min(92vw, 560px);
+  padding: 0.9rem 1.2rem;
+  border-radius: 16px;
+  border: 1px solid var(--core-0);
+  background: linear-gradient(145deg, rgba(34, 224, 255, 0.22), rgba(34, 224, 255, 0.07));
+  color: var(--text);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 22px rgba(34, 224, 255, 0.28);
+  transition:
+    transform 0.12s,
+    box-shadow 0.2s;
+}
+
+.play-cta:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 0 30px rgba(34, 224, 255, 0.45);
+}
+
+.play-cta-icon {
+  display: inline-flex;
+  color: var(--core-0);
+}
+
+.play-cta-icon .icon {
+  width: 26px;
+  height: 26px;
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+.play-cta-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.15;
+}
+
+.play-cta-text strong {
+  font-size: 1.2rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.play-cta-text small {
+  color: var(--text-dim);
+  font-size: 0.76rem;
+}
+
 .menu-tiles {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

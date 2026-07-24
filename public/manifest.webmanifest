@@ -34,5 +34,29 @@
       "type": "image/svg+xml",
       "purpose": "any"
     }
+  ],
+  "categories": ["games", "puzzle"],
+  "screenshots": [
+    {
+      "src": "screenshots/menu.png",
+      "sizes": "540x960",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Campaign menu with ranks, daily challenge and rewards"
+    },
+    {
+      "src": "screenshots/game.png",
+      "sizes": "540x960",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Rotate the pipes to connect every tile to the core"
+    },
+    {
+      "src": "screenshots/map.png",
+      "sizes": "540x960",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Map of Kora — the campaign lights up sector by sector"
+    }
   ]
 }

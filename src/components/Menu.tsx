@@ -12,6 +12,7 @@ import { ACHIEVEMENTS, totalStars } from '../meta/achievements';
 import { EVENT_REWARD_HINTS, isWeekend, weekendEvent } from '../meta/events';
 import { currentRank, nextRank, RANKS } from '../meta/ranks';
 import type { Progress } from './App';
+import { useBackLayer } from './backstack';
 import { CalendarModal, CollectionModal, SettingsModal, StatsModal, ThemeModal } from './Extras';
 import { MapView } from './MapView';
 import { Flag } from './Flag';
@@ -100,6 +101,22 @@ export function Menu({
   const [showCalendar, setShowCalendar] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  // hardwarové Zpět zavírá otevřené vrstvy místo ukončení hry
+  useBackLayer(showMap, () => setShowMap(false));
+  useBackLayer(showAlbum, () => setShowAlbum(false));
+  useBackLayer(showThemes, () => setShowThemes(false));
+  useBackLayer(showCalendar, () => setShowCalendar(false));
+  useBackLayer(showSettings, () => setShowSettings(false));
+  useBackLayer(showStats, () => setShowStats(false));
+  useBackLayer(showRanks, () => setShowRanks(false));
+  useBackLayer(showAchievements, () => setShowAchievements(false));
+  useBackLayer(modesModalOpen, () => {
+    setModesModalOpen(false);
+    setOpenPack(null);
+  });
+  useBackLayer(openPack !== null, () => setOpenPack(null));
+  useBackLayer(langOpen, () => setLangOpen(false));
+
   const weekend = isWeekend(new Date());
   const event = weekendEvent(new Date());
   const eventState =
@@ -110,6 +127,13 @@ export function Menu({
   const totalLevels = LEVELS.length + PACK_LEVEL_TOTAL;
   const maxStars = totalLevels * 3;
   const dailyDoneToday = progress.daily.last === isoToday();
+  // první nedohraný odemčený level kampaně (jinak poslední odemčený)
+  const maxOpen = progress.allUnlocked ? LEVELS.length : progress.unlocked;
+  const firstUnfinished = LEVELS.slice(0, maxOpen).find(
+    ({ id }) => !progress.completed.includes(id),
+  );
+  const nextLevelId = firstUnfinished?.id ?? Math.min(maxOpen, LEVELS.length);
+  const startedCampaign = progress.completed.some((id) => id <= LEVELS.length);
   const rank = currentRank(stars);
   const upcoming = nextRank(stars);
   const progressPct =
@@ -179,6 +203,17 @@ export function Menu({
       </div>
       <h1 className="title">CORE</h1>
       <p className="tagline">{t('tagline')}</p>
+
+      {/* hlavní akce: skoč na první nedohraný level */}
+      <button type="button" className="play-cta" onClick={() => onSelect(nextLevelId)}>
+        <span className="play-cta-icon">
+          <Icon name="bolt" />
+        </span>
+        <span className="play-cta-text">
+          <strong>{startedCampaign ? t('continueCta') : t('playCta')}</strong>
+          <small>{t('level', { n: nextLevelId })}</small>
+        </span>
+      </button>
 
       <div className="stats-row">
         <button

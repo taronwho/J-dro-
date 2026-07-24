@@ -358,6 +358,14 @@ const STRINGS = {
     en: '{x} / {y} stars in the sector',
     de: '{x} / {y} Sterne im Sektor',
   },
+  exitConfirm: {
+    cs: 'Klepni znovu pro ukončení hry',
+    en: 'Tap back again to exit',
+    de: 'Nochmal zurück zum Beenden',
+  },
+  // Hlavní tlačítko v menu
+  playCta: { cs: 'Hrát', en: 'Play', de: 'Spielen' },
+  continueCta: { cs: 'Pokračovat', en: 'Continue', de: 'Weiter' },
   ariaCore: { cs: 'Jádro', en: 'Core', de: 'Kern' },
   ariaLocked: { cs: 'Zamčená dlaždice', en: 'Locked tile', de: 'Gesperrte Kachel' },
   ariaTile: { cs: 'Dlaždice', en: 'Tile', de: 'Kachel' },
