@@ -7,6 +7,7 @@ import { CHAPTER_SIZE, LEVELS, LEVEL_COUNT, PACKS, type PackId } from '../levels
 import { newlyUnlocked, totalStars, type AchievementDef } from '../meta/achievements';
 import { collectibleForLevel, COLLECTION_SETS, setItems } from '../meta/collection';
 import { EVENT_REWARD_HINTS, isWeekend, weekendEvent } from '../meta/events';
+import { unseenMechanics, type MechanicId } from '../meta/mechanics';
 import { currentRank, type RankDef } from '../meta/ranks';
 import { loadTheme, persistTheme, THEMES } from '../meta/themes';
 import { dailyShareText, rushShareText, shareText } from '../share';
@@ -19,6 +20,7 @@ import { Help, type HelpSection } from './Help';
 import { HUD } from './HUD';
 import { Intro } from './Intro';
 import { MapView } from './MapView';
+import { MechanicIntro } from './MechanicIntro';
 import { Menu } from './Menu';
 import { SectorClear } from './SectorClear';
 
@@ -76,6 +78,7 @@ export interface Progress {
   event: { week: string; done: number[]; claimed: boolean };
   allUnlocked: boolean; // testovací odemčení (#unlock-all) — platí i pro nové levely
   tutorialDone: boolean; // úvodní tutoriál na 1. levelu dokončen
+  seenIntros: string[]; // mechaniky, které už hráč dostal vysvětlené
 }
 
 // Kaskáda rozsvícení: delays[i] v ms (-1 = bez animace), entries[i] = strana vstupu světla
@@ -125,6 +128,7 @@ const EMPTY_PROGRESS: Progress = {
   event: { week: '', done: [], claimed: false },
   allUnlocked: false,
   tutorialDone: false,
+  seenIntros: [],
 };
 
 // Fallback do paměti, když localStorage není dostupný
@@ -216,6 +220,9 @@ function loadProgress(): Progress {
               : { week: '', done: [], claimed: false },
           allUnlocked,
           tutorialDone: parsed.tutorialDone === true,
+          seenIntros: Array.isArray(parsed.seenIntros)
+            ? parsed.seenIntros.filter((x): x is string => typeof x === 'string')
+            : [],
         };
       }
     }
@@ -332,6 +339,10 @@ export function App() {
   const [theme, setTheme] = useState<string>(loadTheme);
   const [shareToast, setShareToast] = useState(false);
   const [exitToast, setExitToast] = useState(false);
+  const [pendingIntro, setPendingIntro] = useState<{
+    ids: MechanicId[];
+    run: () => void;
+  } | null>(null);
   const exitAt = useRef(0);
   const [rush, setRush] = useState<RushState>({ score: 0, timeLeft: RUSH_START_SECONDS });
   const [rushOver, setRushOver] = useState<RushOver | null>(null);
@@ -463,12 +474,38 @@ export function App() {
     setScreen('game');
   };
 
-  const startLevel = (id: number): void =>
-    startConfig(LEVELS[id - 1], { kind: 'level', id });
+  // Před levelem s dosud nevysvětlenou mechanikou ukážeme krátký tutoriál.
+  const gateIntro = (config: LevelConfig, run: () => void): void => {
+    const ids = unseenMechanics(config, progress.seenIntros);
+    if (ids.length === 0) {
+      run();
+      return;
+    }
+    setPendingIntro({ ids, run });
+  };
+
+  const startLevel = (id: number): void => {
+    const config = LEVELS[id - 1];
+    gateIntro(config, () => startConfig(config, { kind: 'level', id }));
+  };
   const startPack = (packId: PackId, index: number): void => {
     const pack = PACKS.find((p) => p.id === packId);
     if (pack === undefined || index < 1 || index > pack.levels.length) return;
-    startConfig(pack.levels[index - 1], { kind: 'pack', packId, index });
+    const config = pack.levels[index - 1];
+    gateIntro(config, () => startConfig(config, { kind: 'pack', packId, index }));
+  };
+
+  const confirmIntro = (): void => {
+    if (pendingIntro === null) return;
+    const updated: Progress = {
+      ...progress,
+      seenIntros: [...progress.seenIntros, ...pendingIntro.ids],
+    };
+    setProgress(updated);
+    saveProgress(updated);
+    const { run } = pendingIntro;
+    setPendingIntro(null);
+    run();
   };
   const startDaily = (): void => startConfig(dailyConfig(new Date()), { kind: 'daily' });
   // přehrání staršího dne (trénink) — bez odměn, jen puzzle daného data
@@ -1197,6 +1234,13 @@ export function App() {
         {showHelp && <Help highlight={helpSection} onClose={() => setShowHelp(false)} />}
         {shareToast && <div className="toast">{i18n.t('shareCopied')}</div>}
         {exitToast && <div className="toast">{i18n.t('exitConfirm')}</div>}
+        {pendingIntro !== null && (
+          <MechanicIntro
+            ids={pendingIntro.ids}
+            onStart={confirmIntro}
+            onCancel={() => setPendingIntro(null)}
+          />
+        )}
         {showIntro && (
           <Intro reducedMotion={reducedMotion} onDone={() => setShowIntro(false)} />
         )}

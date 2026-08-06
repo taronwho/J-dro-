@@ -3107,6 +3107,232 @@ button.cal-day.playable:hover {
   animation: intro-fade-up 0.5s ease 2.1s both;
 }
 
+/* ---------- Vysvětlení nové mechaniky před levelem ---------- */
+
+.mi-modal {
+  gap: 0.7rem;
+}
+
+.mi-kicker {
+  margin: 0;
+  text-align: center;
+  letter-spacing: 0.24em;
+  text-indent: 0.24em;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--core-2);
+  text-transform: uppercase;
+}
+
+.mi-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.8rem 0.9rem 0.9rem;
+  border-radius: 14px;
+  border: 1px solid var(--tile-border);
+  background: linear-gradient(180deg, #17171f, #101018);
+  text-align: center;
+  animation: intro-fade-up 0.4s ease both;
+}
+
+.mi-title {
+  margin: 0;
+  font-size: 1.02rem;
+  letter-spacing: 0.05em;
+  color: currentColor;
+}
+
+.mi-text {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.mi-buttons {
+  display: flex;
+  justify-content: center;
+  position: sticky;
+  bottom: -0.6rem;
+  padding: 0.6rem 0 0.2rem;
+  background: linear-gradient(0deg, var(--panel, #14141c) 60%, transparent);
+}
+
+/* --- ilustrace --- */
+.mi-art {
+  width: 100%;
+  max-width: 240px;
+  height: auto;
+  margin-bottom: 0.2rem;
+}
+
+.mi-tile {
+  fill: #191922;
+  stroke: var(--tile-border);
+  stroke-width: 1.4;
+}
+
+.mi-pipe {
+  fill: none;
+  stroke: var(--core-0);
+  stroke-width: 4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px var(--core-0));
+}
+
+.mi-pipe.c0 {
+  stroke: var(--core-0);
+}
+
+.mi-pipe.c1 {
+  stroke: var(--core-1);
+  filter: drop-shadow(0 0 3px var(--core-1));
+}
+
+.mi-dash {
+  fill: none;
+  stroke: var(--core-2);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+
+.mi-arrow,
+.mi-arrow-big {
+  fill: none;
+  stroke: var(--core-2);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mi-arrow-big {
+  stroke-width: 3;
+}
+
+.mi-core {
+  stroke-width: 3;
+  fill: #10101a;
+}
+
+.mi-core.c0 {
+  stroke: var(--core-0);
+  filter: drop-shadow(0 0 5px var(--core-0));
+}
+
+.mi-core.c1 {
+  stroke: var(--core-1);
+  filter: drop-shadow(0 0 5px var(--core-1));
+}
+
+.mi-node {
+  fill: var(--core-0);
+  filter: drop-shadow(0 0 4px var(--core-0));
+}
+
+.mi-ring {
+  fill: none;
+  stroke-width: 3;
+  stroke-dasharray: 3.5 3;
+}
+
+.mi-ring.c0 {
+  stroke: var(--core-0);
+}
+
+.mi-ring.c1 {
+  stroke: var(--core-1);
+}
+
+.mi-ring.on {
+  filter: drop-shadow(0 0 5px currentColor);
+}
+
+.mi-check {
+  fill: none;
+  stroke: #4dff9e;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mi-rivet {
+  fill: var(--text-dim);
+  opacity: 0.75;
+}
+
+.mi-lock {
+  fill: none;
+  stroke: var(--text-dim);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.mi-rot {
+  fill: none;
+  stroke: var(--core-0);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mi-wall {
+  stroke: #ff5d5d;
+  stroke-width: 5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px rgba(255, 93, 93, 0.7));
+}
+
+.mi-cross {
+  stroke: #ff5d5d;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+
+.mi-snow {
+  fill: none;
+  stroke: var(--core-0);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px var(--core-0));
+}
+
+.mi-portal {
+  fill: none;
+  stroke: #b26bff;
+  stroke-width: 2.6;
+  filter: drop-shadow(0 0 4px #b26bff);
+}
+
+.mi-bar-bg {
+  fill: #14141d;
+  stroke: var(--tile-border);
+  stroke-width: 1.2;
+}
+
+.mi-bar {
+  fill: var(--core-2);
+  filter: drop-shadow(0 0 5px var(--core-2));
+}
+
+.mi-num {
+  fill: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  text-anchor: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+.mi-warn {
+  stroke: #ff5d5d;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
 /* ---------- Omezit animace ---------- */
 /* Uživatelské nastavení (data-motion) i systémová preference vypnou rozliv
    světla a všechny ostatní efekty — zůstává jen statické zobrazení stavu. */

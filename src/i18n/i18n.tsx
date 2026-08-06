@@ -259,6 +259,7 @@ const STRINGS = {
     en: 'Some tiles have a wall between them — a connection cannot pass there even if the pipes point at each other. The network must go around it, maze-style.',
     de: 'Zwischen manchen Kacheln steht eine Wand — dort führt keine Verbindung hindurch, selbst wenn die Rohre aufeinander zeigen. Das Netz muss sie wie in einem Labyrinth umgehen.',
   },
+  helpPortals: { cs: 'Portály', en: 'Portals', de: 'Portale' },
   helpPortalsText: {
     cs: 'Trubka vedoucí do víru na okraji dlaždice pokračuje z párového portálu stejné barvy — klidně na druhém konci pole. Energie i barvy jím proudí úplně normálně.',
     en: 'A pipe leading into a vortex at the edge of a tile continues from the paired portal of the same color — possibly on the other side of the board. Energy and colors flow through it just like a normal pipe.',
@@ -363,6 +364,14 @@ const STRINGS = {
     en: 'Tap back again to exit',
     de: 'Nochmal zurück zum Beenden',
   },
+  // Vysvětlení nové mechaniky před startem levelu
+  introTitle: { cs: 'Novinka v tomto levelu', en: 'New in this level', de: 'Neu in diesem Level' },
+  introTitleMulti: {
+    cs: 'Novinky v tomto levelu',
+    en: 'New in this level',
+    de: 'Neu in diesem Level',
+  },
+  introStart: { cs: 'Jdu na to', en: 'Got it, play', de: 'Los geht’s' },
   // Hlavní tlačítko v menu
   playCta: { cs: 'Hrát', en: 'Play', de: 'Spielen' },
   continueCta: { cs: 'Pokračovat', en: 'Continue', de: 'Weiter' },
