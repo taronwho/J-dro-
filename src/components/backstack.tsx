@@ -1,9 +1,14 @@
 import { createContext, useContext, useEffect, useRef } from 'react';
 
 // ---------- Vrstvy pro hardwarové tlačítko Zpět ----------
-// Každá otevřená vrstva (modal, obrazovka hry) přidá záznam do historie
+// Každá otevřená vrstva (modal, obrazovka hry) drží jeden záznam v historii
 // prohlížeče. Zpět tak zavře vrstvu místo ukončení celé aplikace — na
 // Androidu (TWA) je to zásadní, jinak gesto zpět vyhodí hráče ze hry.
+//
+// Historie se nesynchronizuje hned při každé změně, ale až v mikroúloze na
+// konci překreslení. Když se v jednom kroku jedna vrstva zavře a druhá
+// otevře (tutoriál → start levelu), obě změny se vyruší a s historií se
+// vůbec nehýbe — jinak by se rozešla se stavem a hra by odnavigovala pryč.
 
 type Fn = () => void;
 
@@ -15,9 +20,8 @@ export interface BackApi {
 export const BackContext = createContext<BackApi | null>(null);
 
 /**
- * Zaregistruje vrstvu, dokud je `active`. Když hráč stiskne Zpět, zavolá se
- * `onBack`. Když se vrstva zavře z UI, záznam v historii se sám odstraní,
- * takže historie i UI zůstávají v souladu.
+ * Zaregistruje vrstvu, dokud je `active`. Po stisku Zpět se zavolá `onBack`.
+ * Zavření z UI záznam v historii uklidí samo.
  */
 export function useBackLayer(active: boolean, onBack: () => void): void {
   useBackLayerWith(useContext(BackContext), active, onBack);
@@ -41,97 +45,104 @@ export function useBackLayerWith(
     };
     api.push(fn);
     return () => {
-      // zavřeno z UI (ne tlačítkem Zpět) → srovnej historii
+      // zavřeno z UI (ne tlačítkem Zpět) → uklidíme záznam v historii
       if (!closedByBack) api.pop(fn);
     };
   }, [active, api]);
 }
 
 interface BackStackOptions {
-  // zavolá se, když hráč zkusí odejít z hlavní obrazovky (nabídneme potvrzení)
-  onExitAttempt: () => boolean; // true = ukázali jsme výzvu, odchod zrušit
+  /** Vrátí true, pokud jsme místo odchodu ukázali výzvu k potvrzení. */
+  onExitAttempt: () => boolean;
 }
 
-/**
- * Vytvoří API zásobníku vrstev a napojí ho na `popstate`.
- * Historie drží jeden „strážní" záznam navíc, aby šlo zachytit i pokus
- * o odchod z hlavní obrazovky.
- */
 export function useBackStack({ onExitAttempt }: BackStackOptions): BackApi {
   const layers = useRef<Fn[]>([]);
-  const depth = useRef(0);
-  // kolik popstate událostí jsme vyvolali sami (zavření vrstvy z UI)
-  const ignore = useRef(0);
+  const hist = useRef(0); // kolik záznamů vrstev jsme vložili nad základ
+  const ignore = useRef(0); // popstate události, které jsme vyvolali sami
+  const queued = useRef(false);
   const exitRef = useRef(onExitAttempt);
   exitRef.current = onExitAttempt;
 
-  useEffect(() => {
-    const pushGuard = (): void => {
+  const apiRef = useRef<BackApi | null>(null);
+  if (apiRef.current === null) {
+    const sync = (): void => {
+      queued.current = false;
+      const want = layers.current.length;
       try {
-        window.history.pushState({ coreDepth: 0, coreGuard: true }, '');
+        if (want > hist.current) {
+          while (hist.current < want) {
+            hist.current += 1;
+            window.history.pushState({ coreDepth: hist.current }, '');
+          }
+        } else if (want < hist.current) {
+          const delta = hist.current - want;
+          hist.current = want;
+          ignore.current += 1;
+          window.history.go(-delta);
+        }
       } catch {
         // historie nedostupná — hra běží dál bez záchytu
       }
     };
+    const queueSync = (): void => {
+      if (queued.current) return;
+      queued.current = true;
+      queueMicrotask(sync);
+    };
+    apiRef.current = {
+      push: (fn: Fn) => {
+        layers.current.push(fn);
+        queueSync();
+      },
+      pop: (fn: Fn) => {
+        const i = layers.current.lastIndexOf(fn);
+        if (i === -1) return;
+        layers.current.splice(i, 1);
+        queueSync();
+      },
+    };
+  }
+
+  useEffect(() => {
     try {
-      window.history.replaceState({ coreDepth: 0 }, '');
+      // pod aplikací necháme jeden záznam navíc, ať zachytíme i pokus o odchod
+      window.history.replaceState({ coreDepth: -1 }, '');
+      window.history.pushState({ coreDepth: 0 }, '');
     } catch {
       // bez historie
     }
-    pushGuard();
 
     const onPop = (event: PopStateEvent): void => {
-      // návrat, který jsme vyvolali sami při zavření vrstvy z UI — stav už sedí
       if (ignore.current > 0) {
         ignore.current -= 1;
         return;
       }
       const state = event.state as { coreDepth?: number } | null;
-      const target = typeof state?.coreDepth === 'number' ? state.coreDepth : 0;
+      const target = typeof state?.coreDepth === 'number' ? state.coreDepth : -1;
 
-      if (depth.current > target) {
-        // zavři vrstvy až na cílovou hloubku
-        while (depth.current > target) {
-          const fn = layers.current.pop();
-          depth.current -= 1;
-          if (fn !== undefined) fn();
+      if (target < 0) {
+        // hráč je na hlavní obrazovce a chce ze hry ven
+        if (exitRef.current()) {
+          try {
+            window.history.pushState({ coreDepth: 0 }, '');
+          } catch {
+            // bez historie
+          }
         }
-        // strážní záznam znovu, ať je co příště spotřebovat
-        if (depth.current === 0) pushGuard();
         return;
       }
 
-      // jsme na hlavní obrazovce a hráč chce odejít
-      if (exitRef.current()) pushGuard();
+      hist.current = target;
+      while (layers.current.length > target) {
+        const fn = layers.current.pop();
+        if (fn !== undefined) fn();
+      }
     };
 
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
 
-  const api = useRef<BackApi>({
-    push: (fn: Fn) => {
-      depth.current += 1;
-      layers.current.push(fn);
-      try {
-        window.history.pushState({ coreDepth: depth.current }, '');
-      } catch {
-        // bez historie
-      }
-    },
-    pop: (fn: Fn) => {
-      const i = layers.current.lastIndexOf(fn);
-      if (i === -1) return;
-      layers.current.splice(i, 1);
-      depth.current -= 1;
-      ignore.current += 1;
-      try {
-        window.history.back();
-      } catch {
-        ignore.current -= 1;
-      }
-    },
-  });
-
-  return api.current;
+  return apiRef.current;
 }

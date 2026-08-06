@@ -62,7 +62,23 @@ export function mechanicsIn(config: LevelConfig): MechanicId[] {
   return ORDER.filter((id) => found.includes(id));
 }
 
-/** Mechaniky levelu, které hráč ještě neviděl vysvětlené. */
-export function unseenMechanics(config: LevelConfig, seen: string[]): MechanicId[] {
-  return mechanicsIn(config).filter((id) => !seen.includes(id));
+/**
+ * Které mechaniky vysvětlit před startem levelu.
+ *
+ * Vysvětlíme je ve dvou případech:
+ *  1. hráč mechaniku ještě nikdy neviděl (i když skáče levely mimo pořadí),
+ *  2. jde o „zaváděcí" level — první level dané řady (kampaň nebo balíček),
+ *     kde se mechanika objevuje. Tam se karta ukáže vždy, ať si ji hráč může
+ *     kdykoliv připomenout.
+ */
+export function introsForLevel(
+  config: LevelConfig,
+  track: LevelConfig[],
+  seen: string[],
+): MechanicId[] {
+  return mechanicsIn(config).filter((id) => {
+    if (!seen.includes(id)) return true;
+    const first = track.find((lvl) => mechanicsIn(lvl).includes(id));
+    return first !== undefined && first.id === config.id;
+  });
 }

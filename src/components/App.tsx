@@ -7,7 +7,7 @@ import { CHAPTER_SIZE, LEVELS, LEVEL_COUNT, PACKS, type PackId } from '../levels
 import { newlyUnlocked, totalStars, type AchievementDef } from '../meta/achievements';
 import { collectibleForLevel, COLLECTION_SETS, setItems } from '../meta/collection';
 import { EVENT_REWARD_HINTS, isWeekend, weekendEvent } from '../meta/events';
-import { unseenMechanics, type MechanicId } from '../meta/mechanics';
+import { introsForLevel, type MechanicId } from '../meta/mechanics';
 import { currentRank, type RankDef } from '../meta/ranks';
 import { loadTheme, persistTheme, THEMES } from '../meta/themes';
 import { dailyShareText, rushShareText, shareText } from '../share';
@@ -475,8 +475,12 @@ export function App() {
   };
 
   // Před levelem s dosud nevysvětlenou mechanikou ukážeme krátký tutoriál.
-  const gateIntro = (config: LevelConfig, run: () => void): void => {
-    const ids = unseenMechanics(config, progress.seenIntros);
+  const gateIntro = (
+    config: LevelConfig,
+    track: LevelConfig[],
+    run: () => void,
+  ): void => {
+    const ids = introsForLevel(config, track, progress.seenIntros);
     if (ids.length === 0) {
       run();
       return;
@@ -486,13 +490,15 @@ export function App() {
 
   const startLevel = (id: number): void => {
     const config = LEVELS[id - 1];
-    gateIntro(config, () => startConfig(config, { kind: 'level', id }));
+    gateIntro(config, LEVELS, () => startConfig(config, { kind: 'level', id }));
   };
   const startPack = (packId: PackId, index: number): void => {
     const pack = PACKS.find((p) => p.id === packId);
     if (pack === undefined || index < 1 || index > pack.levels.length) return;
     const config = pack.levels[index - 1];
-    gateIntro(config, () => startConfig(config, { kind: 'pack', packId, index }));
+    gateIntro(config, pack.levels, () =>
+      startConfig(config, { kind: 'pack', packId, index }),
+    );
   };
 
   const confirmIntro = (): void => {
