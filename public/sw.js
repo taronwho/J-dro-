@@ -1,7 +1,8 @@
 // Service worker pro offline režim (nutný i pro TWA na Google Play).
 // Navigace: network-first (čerstvý index.html), assety: cache-first
 // (Vite je verzuje hashem v názvu souboru).
-const CACHE = 'core-v2';
+// Na taronwho.github.io sdílí Cache Storage víc aplikací — mažeme jen vlastní core-*.
+const CACHE = 'core-v3';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -12,7 +13,7 @@ self.addEventListener('activate', (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))),
+        Promise.all(keys.filter((k) => k.startsWith('core-') && k !== CACHE).map((k) => caches.delete(k))),
       )
       .then(() => self.clients.claim()),
   );
