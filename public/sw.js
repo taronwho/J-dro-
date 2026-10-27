@@ -1,7 +1,7 @@
 // Service worker pro offline režim (nutný i pro TWA na Google Play).
 // Navigace: network-first (čerstvý index.html), assety: cache-first
 // (Vite je verzuje hashem v názvu souboru).
-const CACHE = 'core-v1';
+const CACHE = 'core-v2';
 
 self.addEventListener('install', () => {
   self.skipWaiting();

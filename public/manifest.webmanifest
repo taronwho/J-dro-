@@ -1,9 +1,9 @@
 {
   "name": "CORE",
   "short_name": "CORE",
-  "id": "./",
-  "start_url": ".",
-  "scope": ".",
+  "id": "/J-dro-/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0a0a12",
